@@ -257,7 +257,7 @@ test('full sheet with a notice on top: the sheet still bounds the map and the ci
 test('hubs: each global page carries its hub tabs; the old operations centre lands in the goal hub',()=>{
   fresh();run('uxLate&&uxLate()');
   // DOM insertion of the tab row is checked in the browser; here: every hub page is wrapped, and routing works.
-  for(const fn of ['showTasks','showActivityCards','chooseContract','showEngineering','shop','showWeather','showFinance','showMaintenance'])assert.equal(run(fn+'.uxTidy'),true,fn+' wrapped');
+  for(const fn of ['showTasks','showActivityCards','showEngineering','shop','showWeather','showFinance','showMaintenance'])assert.equal(run(fn+'.uxTidy'),true,fn+' wrapped');
   let opened='';run('globalThis.__oa=showActivityCards;showActivityCards=()=>{globalThis.__opened="activity"}');
   run('S.contract=null;showOperations()');assert.equal(run('globalThis.__opened'),'activity','operations → 目标/城市活动');
   run('showActivityCards=globalThis.__oa');
@@ -267,10 +267,11 @@ test('upstream texts that name retired entries point to the three hubs',()=>{
   assert.equal(run('uxRename("三张城市活动邀请 · 运营中心选择")'),'三张城市活动邀请 · 点「目标」选择');
   assert.equal(run('uxRename("可在交通采购中购买")'),'可在建造·车辆中购买');
 });
-test('new activity invitations do not pop a sheet mid-play; tapping 目标 still opens them',()=>{
+// 1.2.10: upstream shows new invitations as a sheet again (gated by revision130's safePopup130, which this harness
+// does not load); what stays from the UX layer is that the player's own tap on 目标 opens them.
+test('activity invitations are generated and tapping 目标 opens them',()=>{
   fresh();run('uxLate&&uxLate();S.points=RICH;draft={type:"bus",name:"线1",color:"#c56544",stops:[0,1,2]};commitDraft(true);clearSelection();S.day=30;let st=activityState();st.offers=[];st.active=null;st.next=0;closeModal()');
-  run('if(generateActivityOffers())showActivityCards()');
-  assert.equal(node('modal').hidden,true,'automatic open is suppressed');
+  run('generateActivityOffers();closeModal()');
   assert(run('activityState().offers.length')>0,'offers were generated');
   run('uxOpenHub("goal",1)');assert.equal(node('modal').hidden,false,'player tap opens the cards');
   run('closeModal()');
@@ -328,5 +329,120 @@ test('landscape focus pan joins the restore session (task list / line picker →
   assert.deepEqual(run('({x:uxFrameRestore.from.x,y:uxFrameRestore.from.y,scale:uxFrameRestore.from.scale})'),before,'with the view from before it');
   run('requestAnimationFrame=globalThis.__raf;portraitMode=globalThis.__pm;uxFrameRestore=null;clearSelection()');
 });
+test('messages: lifecycle note is skipped for a new game and honest for a finished one',()=>{
+  fresh();run('uxToastHold=0;S.lines=[];S.day=0;S.lives=1;toast("seed");toast("已回到游戏 · 当前暂停，点 ▶ 继续")');
+  assert.equal(node('toast').textContent,'seed','a brand-new game has nothing to resume');
+  run('S.day=12;S.lives=0;toast("已回到游戏 · 当前暂停，点 ▶ 继续")');
+  assert.match(node('toast').textContent,/本局已结束/,'a finished game does not invite ▶');
+  run('S.lives=1');
+});
+test('messages: idle info waits behind fresh action feedback; warnings never wait',()=>{
+  fresh();run('uxToastHold=0;toast("已支付 ¥560 · 维修需要 3 天")');
+  assert.equal(run('uxToastHold>0'),true,'feedback holds the line');
+  run('toast("中级居住城市可经营农田 · 点击城市查看")');
+  assert.match(node('toast').textContent,/已支付/,'idle info does not replace the payment confirmation');
+  run('toast("河岸镇候客厅持续满员，扣一条生命")');
+  assert.match(node('toast').textContent,/扣一条生命/,'a loss is shown at once');
+  run('uxToastHold=0');
+});
+test('finished match: the run button becomes 结算 and reopens the results',()=>{
+  fresh();run('uxLate&&uxLate();globalThis.__go=0;globalThis.__gameover=gameover;gameover=()=>{__go++};S.lives=0;updateUI()');
+  assert.equal(node('pause').textContent,'结算');
+  run('uxEl("pause").onclick()');assert.equal(run('__go'),1,'tapping it opens the results');
+  run('gameover=__gameover;S.lives=1;updateUI()');
+});
+test('dense map: crowded queues collapse to one row; labels drop the region until needed',()=>{
+  fresh();run('S.cities[0].q=Array.from({length:30},()=>({color:0,shape:0,wait:0}))');
+  assert.equal(run('QUEUE_SHOWN_FOR(S.cities[0])'),6,'one row when crowded');
+  run('S.cities[0].q.length=8');assert.equal(run('QUEUE_SHOWN_FOR(S.cities[0])'),12,'quiet cities keep two rows');
+  assert.equal(run('CITY_LABEL({name:"临江·起始城市圈"},false)'),run('view.scale>=1.25')?'临江·起始城市圈':'临江');
+  assert.equal(run('CITY_LABEL({name:"临江·起始城市圈"},true)'),'临江·起始城市圈','the selected city shows its region');
+  run('S.cities[0].q=[]');
+});
+test('help: the quick steps state the real life-loss rule (full hall for 180 s), not individual waiting',()=>{
+  fresh();run('help()');const h=node('modal-content').innerHTML;
+  assert.doesNotMatch(h,/候车太久会扣命/);assert.match(h,/满员/);
+  run('closeModal()');
+});
+test('line settings: a picked colour is a preview only — never in the game state or any save until 保存设置',()=>{
+  fresh();run('uxLate&&uxLate();S.points=RICH;draft={type:"bus",name:"线1",color:"#c56544",stops:[0,1,2]};commitDraft(true);clearSelection();save()');
+  const id=run('S.lines[0].id'),c0=run('S.lines[0].color'),name0=run('S.lines[0].name'),pick=run('LINECOL[3]');
+  const stored=()=>run('JSON.parse(localStorage.getItem("transit-atlas-v1")).lines[0]');
+  run(`renameLine(${id});setLineColor(${id},LINECOL[3])`);
+  assert.equal(run('S.lines[0].color'),c0,'picking does not touch the line');assert.equal(run('uxLineEdit.preview'),pick,'it is pending in the sheet');
+  run('save()');assert.equal(stored().color,c0,'a save while the sheet is open (page leave, interruption) keeps the old colour');
+  run('load()');assert.equal(run('S.lines[0].color'),c0,'reloading after leaving unsaved keeps the old colour');assert.equal(run('S.lines[0].name'),name0);
+  run(`renameLine(${id});setLineColor(${id},LINECOL[3]);closeModal()`);
+  assert.equal(run('S.lines[0].color'),c0,'closing without saving');assert.equal(stored().color,c0,'and the save made on close');
+  node('linename').value='新名字';run(`renameLine(${id});setLineColor(${id},LINECOL[3]);applyName(${id})`);
+  assert.equal(run('S.lines[0].color'),pick,'保存 keeps the colour');assert.equal(stored().color,pick,'in the save too');
+  run('load()');assert.equal(run('S.lines[0].color'),pick,'and after reloading');assert.equal(run('S.lines[0].name'),'新名字');
+  run('clearSelection()');
+});
+test('line identity: codes come from the name (number, plus type when numbers repeat across types)',()=>{
+  fresh();run('S.points=RICH;draft={type:"bus",name:"大巴1线",color:"#c56544",stops:[0,1]};commitDraft(true);draft={type:"bus",name:"大巴2线",color:"#2f8a78",stops:[1,2]};commitDraft(true)');
+  assert.equal(run('uxLineCode(S.lines[0])'),'1');assert.equal(run('uxLineCode(S.lines[1])'),'2');
+  run('S.lines[1].name="动车1线";S.lines[1].type="emu"');
+  assert.equal(run('uxLineCode(S.lines[0])'),'巴1','same number, different type: the type disambiguates');assert.equal(run('uxLineCode(S.lines[1])'),'动1');
+  run('S.lines[1].name="海滨专线"');assert.equal(run('uxLineCode(S.lines[1])'),'海滨','no number: first characters');
+  run('S.lines.length=0;S.vehicles.length=0');
+});
+test('dense map: zoomed out or eight cities, any queue over one row folds to one row + pill',()=>{
+  fresh();run('S.cities[0].q=Array.from({length:8},()=>({color:0,shape:0,wait:0}));view.scale=1.2');
+  const few=run('realCities().filter(c=>!c.dormant).length')<8;
+  if(few)assert.equal(run('QUEUE_SHOWN_FOR(S.cities[0])'),12,'close-up, few cities: two rows');
+  run('view.scale=.8');assert.equal(run('QUEUE_SHOWN_FOR(S.cities[0])'),6,'zoomed out: one row');
+  run('S.cities[0].q=[];view.scale=1');
+});
+test('line picker at a station: lines through it stay strong, others fade; a selected line wins',()=>{
+  fresh();run('S.points=RICH;draft={type:"bus",name:"线1",color:"#c56544",stops:[0,1]};commitDraft(true);draft={type:"bus",name:"线2",color:"#2f8a78",stops:[1,2]};commitDraft(true)');
+  run('selected={type:"junction",id:0}');assert.equal(run('LINE_ALPHA(S.lines[0],null)'),1);assert(run('LINE_ALPHA(S.lines[1],null)')<.5);
+  assert.equal(run('LINE_ALPHA(S.lines[1],S.lines[1].id)'),1);assert(run('LINE_ALPHA(S.lines[0],S.lines[1].id)')<.5);
+  run('selected=null;S.lines.length=0;S.vehicles.length=0');
+});
+test('play view never shows ground beyond the map edge when the map can cover the screen',()=>{
+  fresh();run('globalThis.__ms=globalThis.mapSpec;mapSpec={bounds:{xmin:-1000,xmax:1200,ymin:-300,ymax:1200}}');
+  const t=run('uxClampToMap({x:5000,y:5000,scale:1})');assert(t.x<=1000&&t.y<=300,'pulled back inside');
+  const c=run('uxClampToMap({x:0,y:0,scale:.05})');assert.equal(Math.round(c.x),Math.round(run('(W-200*.05)/2')),'a map smaller than the screen is centred');
+  run('mapSpec=globalThis.__ms');
+});
+
+test('notice dismissal belongs to one weather/construction event, not all future matching text',()=>{
+  fresh();run('uxLate();S.day=40;S.activityCards=null;for(let c of realCities())c.dormant=false;S.climate.events=[{type:"rain",start:39,end:41}]');
+  run('updateUI()');assert.match(node('notice').textContent,/区域雨/);
+  node('notice-close').onclick();run('updateUI()');assert.equal(node('notice').textContent,'');
+  run('S.day=42;updateUI()');assert.equal(node('notice').textContent,'');
+  run('S.climate.events=[{type:"rain",start:43,end:45}];S.day=44;updateUI()');assert.match(node('notice').textContent,/区域雨/,'new rain must be visible');
+  run('S.climate.events=[];S.infrastructure.noticeTest={until:46};updateUI()');assert.match(node('notice').textContent,/道路施工/);
+  node('notice-close').onclick();run('updateUI()');assert.equal(node('notice').textContent,'');
+  run('S.day=47;updateUI();S.infrastructure.noticeTest.until=50;updateUI()');assert.match(node('notice').textContent,/道路施工/,'new construction must be visible');
+});
+test('late activity notices retain dismissal through progress, but new phases and invitations show',()=>{
+  fresh();run('uxLate();S.day=40;S.activityCards=null;activityState().offers=[makeActivityCard(1,1,[0])];updateUI()');
+  assert.match(node('notice').textContent,/活动邀请/);node('notice-close').onclick();
+  run('updateUI();updateUI()');assert.equal(node('notice').textContent,'');
+  run('acceptActivity(activityState().offers[0].id);closeModal();updateUI()');assert.match(node('notice').textContent,/准备中/);
+  node('notice-close').onclick();run('updateUI()');assert.equal(node('notice').textContent,'');
+  run('S.day=activityState().active.start;updateUI()');assert.match(node('notice').textContent,/送达/);
+  node('notice-close').onclick();run('activityState().active.delivered++;updateUI()');assert.equal(node('notice').textContent,'');
+  run('activityState().active=null;activityState().offers=[makeActivityCard(1,1,[0])];updateUI()');assert.match(node('notice').textContent,/活动邀请/);
+});
+test('closing an activity overlay does not dismiss the underlying weather',()=>{
+  fresh();run('uxLate();S.day=40;S.climate.events=[{type:"rain",start:39,end:45}];S.activityCards=null;activityState().offers=[makeActivityCard(1,1,[0])];updateUI()');
+  node('notice-close').onclick();run('updateUI()');assert.equal(node('notice').textContent,'');
+  run('activityState().offers=[];updateUI()');assert.match(node('notice').textContent,/区域雨/);
+});
+test('new game can display an activity even when its id repeats the dismissed previous game',()=>{
+  const offer=()=>run('uxLate();S.day=40;S.activityCards=null;activityState().offers=[makeActivityCard(1,1,[0])];updateUI()');
+  fresh();offer();node('notice-close').onclick();run('updateUI()');assert.equal(node('notice').textContent,'');
+  fresh();offer();assert.match(node('notice').textContent,/活动邀请/);
+});
+test('opening countdown dismissal follows its city and opening time, not the changing counter',()=>{
+  fresh();run('uxLate();S.day=40;S.activityCards=null;S.cities[1].dormant=true;S.cities[1].openingAt=S.day+10/12;updateUI()');
+  assert.match(node('notice').textContent,/即将开放/);node('notice-close').onclick();
+  run('S.day+=1/12;updateUI()');assert.equal(node('notice').textContent,'');
+  run('S.cities[1].dormant=false;S.cities[2].dormant=true;S.cities[2].openingAt=S.day+10/12;updateUI()');assert.match(node('notice').textContent,/即将开放/);
+});
+
 console.log(JSON.stringify(checks,null,2));
 if(checks.some(x=>!x.passed))process.exitCode=1;

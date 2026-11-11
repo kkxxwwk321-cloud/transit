@@ -981,3 +981,397 @@ select.ux-seg-src{display:none}
 .ux-steps-fin span > button.primary{display:flex;align-items:center;width:max-content}
 
 .modal .ux-warnline{margin:12px 0 0;padding:10px 12px;border-radius:12px;background:#f8ece6;color:#9a4a35;font-size:12px;font-weight:600}
+
+/* ============================================================
+   1.2.10 design pass
+   ============================================================ */
+/* finished match: the run control becomes a results button */
+#pause.is-ended{width:auto!important;padding:0 14px!important;background:#f3ede2!important;color:#7a5a3a!important;font-size:13px!important;font-weight:650;letter-spacing:.5px}
+
+/* ---------- dock: three equal hubs; the open one is marked ---------- */
+footer .dock .dock-hub,footer .dock .dock-hub.is-primary{background:#fffdf7f2!important;color:var(--ink)!important;border:1px solid #e3e6dc!important;box-shadow:0 2px 10px #263b4214!important}
+footer .dock .dock-hub.is-open{background:var(--ink)!important;color:#fff!important;border-color:var(--ink)!important}
+footer .dock .dock-hub svg{stroke:currentColor}
+/* ---------- network tray (phones in portrait) ---------- */
+@media (orientation:portrait) and (max-width:820px){
+  body #routes.route-panel{display:grid!important;grid-template-columns:minmax(0,1fr);gap:6px;padding:8px 10px 10px!important;max-height:none!important;overflow:visible!important;border-radius:16px;box-shadow:0 3px 14px #263b4214}
+  body #routes .panel-heading{display:flex!important;align-items:center;gap:8px;min-height:36px;padding:0!important;margin:0}
+  body #routes .panel-heading > span:first-child{flex:0 0 auto;font-size:13px;font-weight:650;color:var(--ink);white-space:nowrap}
+  body #routes .panel-heading > span:first-child small{margin-left:4px;font-size:11px;font-weight:500;color:var(--muted)}
+  #routes .ux-swatches{flex:1 1 auto;min-width:0;display:none;gap:3px;align-items:center;overflow:hidden}
+  #routes.collapsed .ux-swatches{display:flex}
+  #routes .ux-swatches button{flex:0 0 auto;width:18px;height:28px;padding:0;border:0;background:none;position:relative}
+  #routes .ux-swatches button::before{content:'';position:absolute;left:3px;right:3px;top:12px;height:4px;border-radius:2px;background:var(--c)}
+  #routes .ux-swatches button.on::before{top:10px;height:8px}
+  #routes:not(.collapsed) .panel-heading > span:first-child{flex:1 1 auto}
+  body #routes #route-new130{min-height:34px;padding:0 12px;border-radius:17px;font-size:12px;font-weight:650;background:var(--ink);flex:0 0 auto}
+  body #routes #collapse{flex:0 0 auto;width:34px;height:34px;border-radius:17px;background:var(--chip);font-size:16px;line-height:1}
+  body #routes .panel-heading #overview{position:static!important;flex:0 0 auto;width:34px!important;height:34px!important;border-radius:17px!important;background:var(--chip)!important;box-shadow:none!important;font-size:15px}
+  body #routes:not(.collapsed) #route-list{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px;max-height:114px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+  body #routes #route-list::-webkit-scrollbar{display:none}
+  body #routes #route-list:empty{display:none!important}
+  body #routes .route-row{width:auto!important;min-height:34px!important;height:34px;margin:0;padding:0 10px 0 9px!important;gap:7px;border-radius:17px;background:#f3f5ef;border:1px solid transparent}
+  body #routes .route-row.active{background:#fff;border-color:var(--ink)}
+  body #routes .route-row .swatch{width:14px;flex:0 0 14px;border-top-width:4px}
+  body #routes .route-row .name{flex:1;min-width:0;max-width:none;font-size:12px;font-weight:600}
+  body #routes .route-row small,body #routes .route-row .route-actions{display:none!important}
+  body #routes .route-foot{display:none!important}
+}
+@media (orientation:portrait) and (max-width:820px){
+  body #routes .panel-heading #route-new130{width:auto!important;min-width:0!important;max-width:none!important;overflow:visible!important;font-size:12px!important}
+}
+
+/* ---------- city sheet ---------- */
+.ux-load{display:grid;gap:8px;margin:10px 0 4px;padding:12px;border-radius:14px;background:#f6f7f2}
+.ux-load-main{display:flex;align-items:baseline;gap:8px;min-width:0}
+.ux-load-main b{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink)}
+.ux-load-main span{flex:1;min-width:0;font-size:12px;color:#5f6f68}
+.ux-load-main em{font-style:normal;font-size:11px;font-weight:650;padding:3px 9px;border-radius:10px;white-space:nowrap}
+.ux-load-main em.is-over{background:#b5573f;color:#fff}
+.ux-load-main em.is-near{background:#f3e3bf;color:#7a5a24}
+.ux-load-main em.is-calm{background:#e4eee0;color:#4f7f45}
+.ux-load-press{display:grid;gap:4px}
+.ux-load-press .ux-bar{height:6px}
+.ux-load-press .ux-bar.is-over i{background:#b5573f}
+.ux-load-press small{font-size:11.5px;color:#5f6f68}
+.ux-fac-strip{display:flex;align-items:center;gap:6px;margin:8px 0 2px;overflow-x:auto;scrollbar-width:none}
+.ux-fac-strip::-webkit-scrollbar{display:none}
+.ux-fac-strip > span{font-size:12px;color:#5f6f68;margin-right:2px;flex:0 0 auto}
+.ux-fac-strip button{flex:0 0 auto;display:flex;align-items:center;gap:5px;height:32px;padding:0 10px 0 8px;border-radius:16px;background:#fff;border:1px solid var(--line);font-size:12px;color:var(--ink)}
+.ux-fac-strip button.is-off{color:#93a09a}
+.ux-fac-strip svg{width:16px;height:16px;fill:none;stroke:#5f7d70;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ux-fac-strip small{font-size:12px}
+.ux-fac-tile.is-flash{border-color:var(--ink)!important;background:#fff!important}
+.ux-fac-tile b{font-size:13px!important}
+.ux-fac-tile small{font-size:11.5px!important;color:#5f6f68!important}
+.ux-fac-tile em{font-size:12px!important}
+.ux-wait{margin:12px 0 4px;border-radius:14px;background:#f6f7f2;padding:4px 12px 6px}
+.ux-wait-head,.ux-wait-row{display:grid;grid-template-columns:minmax(0,1fr) 44px 46px;align-items:center;gap:6px}
+.ux-wait-head{min-height:30px;font-size:12px;color:#5f6f68}
+.ux-wait-head small{text-align:right;font-size:11px;color:var(--muted)}
+.ux-wait-group{display:flex;justify-content:space-between;margin:8px 0 2px;padding-top:6px;border-top:1px solid #e3e8de;font-size:11.5px;font-weight:600;color:#5f6f68}
+.ux-wait-group small{font-weight:500;color:var(--muted)}
+.ux-wait-row{width:100%;min-height:34px;padding:0;background:none;border:0;border-bottom:1px solid #edf0e8;text-align:left;font-size:13px;border-radius:0}
+.ux-wait-row:last-child{border-bottom:0}
+.ux-wait-row span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.ux-wait-row b{text-align:right;font-size:15px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.ux-wait-row small{text-align:right;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ux-wait-row.is-late small{color:#b5573f;font-weight:600}
+/* peek: a real control instead of a painted hint */
+.detail-panel .ux-peekbar{display:none}
+@media (orientation:portrait) and (max-width:820px){
+  .detail-panel.is-peek::after{content:none!important;display:none!important}
+  .detail-panel.is-peek{padding-bottom:52px!important}
+  .detail-panel.is-peek > .ux-peekbar{display:flex;position:absolute;left:0;right:0;bottom:0;z-index:2;align-items:center;justify-content:center;gap:6px;height:48px;border:0;border-radius:0 0 18px 18px;background:linear-gradient(#fffef900,#fffef9 38%);font-size:12.5px;font-weight:600;color:var(--ink)}
+  .detail-panel.is-peek > .ux-peekbar i{font-style:normal;font-size:14px;color:#6f7d76}
+}
+@media (orientation:portrait) and (max-width:820px){
+  /* the tray steps aside while a sheet, the draw bar or the line picker owns the bottom of the screen */
+  body:has(#details:not([hidden])) #routes.route-panel,
+  body:has(#drawbar:not([hidden])) #routes.route-panel,
+  body:has(#junction-picker:not([hidden])) #routes.route-panel{display:none!important}
+}
+
+/* ---------- hub pages ---------- */
+.modal-head .ux-back{flex:0 0 auto;min-height:34px;padding:0 12px;border-radius:17px;background:var(--chip);font-size:12px;font-weight:600;color:var(--ink)}
+/* earthquake monitor with no quake: a settings row, not a warning card */
+.quake-summary.is-idle{display:flex!important;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 0!important;padding:10px 12px!important;border-radius:12px!important;background:#f6f7f2!important;border:0!important;box-shadow:none!important}
+.quake-summary.is-idle b{font-size:13px;font-weight:600;color:var(--ink)}
+.quake-summary.is-idle b small{margin-left:8px;font-size:12px;font-weight:500;color:#5f6f68}
+.quake-summary.is-idle button{flex:0 0 auto;min-height:32px!important;margin:0!important;padding:0 12px!important;border-radius:16px!important;background:#fff!important;border:1px solid var(--line)!important;color:var(--ink)!important;font-size:12px!important}
+/* vehicles: the numbers that decide a purchase are readable */
+.ux-product small{font-size:12px!important;line-height:1.5;color:#5f6f68!important}
+.ux-product .ux-lock{color:#8f6b3c!important}
+.ux-product b{font-size:15px}
+.city-mission .eyebrow,.city-mission .mission-heading span{font-size:11.5px!important;color:#5f6f68}
+/* stocks: the same reading scale as the other sheets */
+.financial-market .market-stock-detail{padding:12px!important;border-radius:14px!important;background:#f6f7f2!important;border:0!important}
+.financial-market .market-stock-detail h2{font-size:18px!important;margin:2px 0 4px!important;letter-spacing:0}
+.financial-market .market-quote b,.financial-market .market-quote strong{font-size:24px!important}
+.financial-market .market-quote span,.financial-market .market-quote small{font-size:13px!important}
+.financial-market .market-stock-list{scrollbar-width:none;scroll-snap-type:x proximity;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent)}
+.financial-market .market-stock-list::-webkit-scrollbar{display:none}
+.financial-market .market-stock{scroll-snap-align:start;min-height:52px!important}
+.financial-market .market-metrics b{font-size:13px!important}
+.financial-market .market-metrics small{font-size:11.5px!important;color:#5f6f68!important}
+.financial-market .market-list-heading{font-size:11.5px!important;color:#5f6f68!important}
+/* map picker: the card (with its save line) fits short portrait phones */
+.atlas-save{font-size:11px!important;color:#5f6b58!important}
+@media (orientation:portrait) and (max-height:780px){
+  .atlas-terrain svg{height:min(20vh,160px)!important;width:100%!important}
+  .atlas-card>p{margin:8px 0 10px!important;line-height:1.6!important}
+  .atlas-card h2{margin:8px 0 6px!important}
+}
+/* activity deck on short landscape screens: what the task is gets the card's height; the two actions sit beside it */
+@media (orientation:landscape) and (max-height:500px){
+  .deck128 .deck-tip128{display:none}
+  .deck-stage128 .activity-front{flex-direction:row!important}
+  .deck-stage128 .card-content128{flex:1 1 auto;min-width:0;padding:12px 14px!important}
+  .deck-stage128 .card-actions128{flex:0 0 190px;justify-content:center;padding:12px!important;border-left:1px solid #dce2d4}
+  .deck-pager128 button{min-height:38px!important;padding:6px 10px!important}
+  .deck-tools128 button{min-height:28px!important}
+}
+/* line picker at a shared station */
+#junction-picker .junction-city-task{display:flex!important;align-items:center;gap:10px;width:100%;min-height:52px!important;padding:8px 12px!important;border-radius:14px!important;background:#fff!important;border:1px solid var(--ink)!important;color:var(--ink)!important;text-align:left}
+#junction-picker .junction-city-task span{flex:1;min-width:0}
+#junction-picker .junction-city-task b{display:block;font-size:14px}
+#junction-picker .junction-city-task small{display:block;font-size:11.5px;color:#5f6f68;font-weight:500}
+#junction-picker .junction-city-task em{font-style:normal;font-size:12px;font-weight:650;padding:3px 9px;border-radius:10px;background:#e4eee0;color:#4f7f45;white-space:nowrap}
+#junction-picker .junction-city-task em.is-near{background:#f3e3bf;color:#7a5a24}
+#junction-picker .junction-city-task em.is-over{background:#b5573f;color:#fff}
+#junction-picker .junction-city-task i{font-style:normal;font-size:18px;color:#6f7d76}
+#junction-picker .junction-line{min-height:46px!important}
+#junction-picker .junction-drag{min-height:32px!important;padding:0 12px!important;border-radius:16px!important;background:#fff!important;color:var(--ink)!important;border:1px solid #cfd6cc!important;font-size:12px!important;font-weight:600}
+@media (orientation:portrait) and (max-width:820px){
+  #junction-picker{max-height:calc(100dvh - var(--hud-h) - var(--safe-t) - var(--dock-btn-h) - var(--dock-bottom) - 40px);overflow-y:auto}
+}
+/* side route panel (landscape / desktop): one tidy heading row */
+@media not all and (orientation:portrait) and (max-width:820px){
+  body #routes.route-panel{min-width:252px}
+  body #routes .panel-heading{display:flex!important;flex-wrap:nowrap;align-items:center;gap:6px}
+  body #routes .panel-heading > span:first-child{flex:1 1 auto;min-width:0;white-space:nowrap;font-size:13px;font-weight:650}
+  body #routes .panel-heading > span:first-child small{margin-left:4px;font-size:11px;font-weight:500;color:var(--muted)}
+  body #routes #route-new130{width:auto!important;min-height:32px!important;padding:0 10px!important;border-radius:16px!important;font-size:12px!important;flex:0 0 auto;background:var(--ink)!important}
+  body #routes #collapse{flex:0 0 auto;width:30px;height:30px;border-radius:15px}
+  #routes .ux-swatches{display:none;gap:3px;flex:1 1 auto;min-width:0;overflow:hidden}
+  #routes.collapsed .ux-swatches{display:flex}
+  #routes .ux-swatches button{flex:0 0 auto;width:16px;height:24px;padding:0;border:0;background:none;position:relative}
+  #routes .ux-swatches button::before{content:'';position:absolute;left:2px;right:2px;top:10px;height:4px;border-radius:2px;background:var(--c)}
+}
+/* side route panel: lines as chips, two per row, so a network of eight fits without scrolling */
+@media not all and (orientation:portrait) and (max-width:820px){
+  body #routes:not(.collapsed) #route-list{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  body #routes .route-row{width:auto!important;min-height:34px!important;height:34px;margin:0;padding:0 10px 0 9px!important;gap:7px;border-radius:17px;background:#f3f5ef;border:1px solid transparent}
+  body #routes .route-row.active{background:#fff;border-color:var(--ink)}
+  body #routes .route-row .swatch{width:14px;flex:0 0 14px}
+  body #routes .route-row .name{flex:1;min-width:0;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  body #routes .route-row small,body #routes .route-row .route-actions{display:none!important}
+  body #routes.route-panel{max-height:calc(100dvh - var(--hud-h) - var(--safe-t) - 120px)!important}
+}
+/* short landscape phones: the tray runs along the bottom edge, left of the dock, two rows at most */
+@media (orientation:landscape) and (max-height:500px){
+  body #routes.route-panel{top:auto!important;bottom:var(--dock-bottom)!important;left:calc(var(--gutter) + var(--safe-l))!important;right:calc(var(--gutter) + var(--safe-r) + 356px)!important;width:auto!important;min-width:0;display:grid!important;gap:6px;padding:8px 10px!important;overflow:visible!important;max-height:none!important}
+  body #routes:not(.collapsed) #route-list{grid-template-columns:repeat(auto-fill,minmax(92px,1fr));max-height:74px;overflow-y:auto;scrollbar-width:none}
+  body #routes .route-foot{display:none!important}
+  body:has(#details:not([hidden])) #routes.route-panel,body:has(#drawbar:not([hidden])) #routes.route-panel{display:none!important}
+}
+/* collapsed tray: the swatches are the point, so the heading gives them the room — the title shrinks to the count,
+   「＋ 新建线路」 to ＋, and swatches wrap onto a second row rather than being clipped */
+body #routes.collapsed .panel-heading{flex-wrap:nowrap;align-items:center}
+body #routes.collapsed .panel-heading > span:first-child{flex:0 0 auto!important;font-size:0!important}
+body #routes.collapsed .panel-heading > span:first-child small{margin:0!important;font-size:12px!important;font-weight:600;color:#5f6f68}
+body #routes.collapsed .ux-swatches{display:flex!important;flex:1 1 auto;min-width:0;flex-wrap:wrap;overflow:visible!important;row-gap:0}
+body #routes.collapsed #route-new130{width:34px!important;min-width:34px!important;padding:0!important;font-size:0!important}
+body #routes.collapsed #route-new130::before{content:'＋';font-size:18px;font-weight:400}
+body #routes #collapse{font-size:15px!important;line-height:1;color:var(--ink)}
+body #routes .ux-swatches{gap:2px!important}
+body #routes .ux-swatches button{width:17px!important}
+body #routes .panel-heading{gap:6px!important}
+/* expand / collapse: a drawn chevron (the text glyph stays for screen readers via aria-label) */
+body #routes #collapse{font-size:0!important;position:relative}
+body #routes #collapse::before{content:'';position:absolute;left:50%;top:50%;width:8px;height:8px;border-right:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:translate(-50%,-70%) rotate(45deg)}
+body #routes.collapsed #collapse::before{transform:translate(-50%,-30%) rotate(-135deg)}
+/* ---------- line sheet: the numbers and the route read first; adding a vehicle is a clear but quieter control ---------- */
+#details .ux-fleet{display:grid!important;grid-template-columns:auto minmax(0,1fr) auto;align-items:end;gap:14px;margin:10px 0 6px;padding:12px;border-radius:14px;background:#f6f7f2;border:0!important}
+#details .ux-fleet > div > small{display:block;font-size:12px;color:#5f6f68;margin-bottom:2px}
+#details .ux-fleet > div > b{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink);line-height:1.1}
+#details .ux-fleet > div > b span{font-size:13px;font-weight:500;color:#5f6f68}
+#details .ux-fleet-load{min-width:0}
+#details .ux-fleet-load .ux-bar{display:block;height:5px;margin-top:6px}
+#details .ux-fleet-load .ux-bar i{background:var(--lc)}
+#details .ux-stepper{align-self:center;display:flex;gap:6px}
+#details .ux-stepper button{min-height:40px!important;border-radius:12px!important;font-size:13px!important}
+#details .ux-stepper button:first-child{width:40px;background:#fff!important;border:1px solid var(--line)!important;color:var(--ink)!important}
+#details .ux-stepper button.primary{padding:0 12px!important;background:#fff!important;color:var(--ink)!important;border:1.5px solid var(--ink)!important;font-weight:650}
+#details .ux-stepper button.primary:disabled{border-color:var(--line)!important;color:#9aa69f!important}
+/* route: stations on a line in the line's own colour */
+#details .ux-route{display:flex;flex-wrap:wrap;align-items:center;row-gap:8px;column-gap:0;margin:10px 0 4px}
+#details .ux-route > i{flex:0 0 14px;height:4px;margin:0 2px;border-radius:2px;background:var(--lc);font-size:0;color:transparent}
+#details .ux-stop{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:0 6px 0 10px;border-radius:16px;background:#fff;border:2px solid var(--lc);font-size:13px;font-weight:600;color:var(--ink)}
+#details .ux-stop button{width:22px;height:22px;min-height:0;padding:0;border-radius:11px;background:transparent;color:#8a968c;font-size:13px}
+/* vehicles */
+#details .ux-list .ux-row{min-height:44px}
+#details .ux-list .ux-row b{font-size:13px}
+#details .ux-list .ux-row span{font-size:13px}
+#details .ux-list .ux-row small{font-size:12px;color:#5f6f68}
+#details .ux-fleet{align-items:start!important}
+#details .ux-stepper{align-self:center!important}
+#details .ux-route{column-gap:0!important}
+#details .ux-hop{display:inline-flex;align-items:center}
+#details .ux-hop > i{display:block;width:14px;height:4px;margin:0 2px;border-radius:2px;background:var(--lc)}
+#details .ux-stop{border-width:1.5px!important;font-size:13px!important}
+
+/* collapsed tray: each entry is a coded pill in the line colour (same code as on the map) */
+body #routes .ux-swatches button{width:auto!important;min-width:24px;height:24px!important;padding:0 6px!important;margin:2px 0;border-radius:12px!important;background:var(--c)!important;color:#fff!important;font-size:11px!important;font-weight:700;line-height:24px;letter-spacing:.2px}
+body #routes .ux-swatches button::before{content:none!important}
+body #routes .ux-swatches button.on{box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--ink)}
+body #routes .ux-swatches{gap:4px!important;row-gap:2px!important}
+body #routes.collapsed .panel-heading > span:first-child{display:none!important}
+/* upstream 1.3 (revision13.css) styles every heading span as flex: keep the code strip for the collapsed state only */
+body #routes .panel-heading > span.ux-swatches{display:none!important}
+body #routes.collapsed .panel-heading > span.ux-swatches{display:flex!important;flex-wrap:wrap;align-items:center}
+/* ---------- hub sheets: one frame per hub — every page opens at the same height (and width), so the tabs and ×
+   stay where the thumb left them while switching 收支 / 维护 / 理财 / 股票; content scrolls inside ---------- */
+.modal:has(.ux-hub-tabs){height:min(84dvh,820px);width:min(820px,calc(100vw - 40px))!important;max-width:820px!important}
+@media (orientation:portrait) and (max-width:820px){
+  .modal:has(.ux-hub-tabs){height:86dvh!important;max-height:86dvh!important;width:100%!important;max-width:100%!important}
+}
+@media (orientation:landscape) and (max-height:500px){
+  .modal:has(.ux-hub-tabs){height:calc(100dvh - 16px)!important;max-height:calc(100dvh - 16px)!important}
+}
+@media (orientation:portrait) and (max-width:820px){ .modal:has(.ux-hub-tabs){padding-left:18px!important;padding-right:18px!important} }
+.modal:has(.ux-hub-tabs){background:#fff!important}
+/* activity card on short landscape screens: the basis for the decision (stakes, target, timing, reward, penalty) is
+   on the first screen next to 承接 — a two-column fact layout instead of the portrait card's tall stack */
+@media (orientation:landscape) and (max-height:500px){
+  .deck-stage128 .card-content128{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:12px;row-gap:6px;align-content:start}
+  .deck-stage128 .card-content128 > .card-rarity{grid-column:1;grid-row:1;min-height:0!important;padding:0!important;border:0!important;margin:0!important}
+  .deck-stage128 .card-content128 > .card-rarity span{font-size:14px!important}
+  .deck-stage128 .card-content128 > .card-feature{grid-column:2;grid-row:1;justify-self:end;align-self:center;margin:0!important;font-size:11px!important}
+  .deck-stage128 .card-content128 > h3{grid-column:1;grid-row:2;margin:0!important;font-size:19px!important;line-height:1.25}
+  .deck-stage128 .card-content128 > .card-city{grid-column:2;grid-row:2;align-self:center;justify-self:start;font-size:13px!important}
+  .deck-stage128 .card-content128 > .card-stats{grid-column:1/-1;grid-row:3;display:flex!important;gap:6px;margin:2px 0 0!important;padding:0!important;border:0!important}
+  .deck-stage128 .card-content128 > .card-stats span{flex:1;display:flex;align-items:baseline;justify-content:center;gap:3px;padding:6px 4px;border-radius:10px;background:#ffffff14;font-size:11px;white-space:nowrap}
+  .deck-stage128 .card-content128 > .card-stats b{font-size:17px!important}
+  .deck-stage128 .card-content128 > .card-reward{grid-column:1;grid-row:4;margin:0!important;padding:8px 10px!important;border-radius:10px}
+  .deck-stage128 .card-content128 > .card-reward p{margin:2px 0 0!important;font-size:14px!important}
+  .deck-stage128 .card-content128 > .card-risk{grid-column:2;grid-row:4;margin:0!important;padding:8px 10px;border-radius:10px;background:#ffffff0d;font-size:12px!important;line-height:1.45}
+  .deck-stage128 .card-content128 > .card-sources{grid-column:1/-1;grid-row:5;margin:4px 0 0!important;font-size:12px!important}
+}
+@media (orientation:landscape) and (max-height:500px){
+  .deck-stage128 .card-content128 > .card-stats span{display:flex!important;flex-direction:row!important;align-items:baseline!important;justify-content:center!important;gap:3px!important;padding:5px 4px!important;text-align:left!important}
+  .deck-stage128 .card-content128 > .card-stats b{display:inline!important;font-size:16px!important;line-height:1!important}
+  .deck-stage128 .card-content128{padding-top:10px!important;row-gap:5px!important}
+  .deck-stage128 .card-content128 > h3{font-size:18px!important}
+}
+
+/* maintenance: transport mode on each bill */
+.ux-mode{display:inline-block;margin-right:8px;padding:1px 7px;border-radius:9px;font-style:normal;font-size:11px;font-weight:650;vertical-align:1px}
+.ux-mode.is-road{background:#efe9dc;color:#7a5f3a}
+.ux-mode.is-rail{background:#e1ebf2;color:#3f5a7a}
+.ux-mode.is-bridge{background:#e5ece7;color:#4f6f60}
+/* roads page: facility count as three tiles */
+.ux-tiles3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:10px 0 2px}
+.ux-tiles3 div{padding:8px 10px;border-radius:10px;background:#fff}
+.ux-tiles3 small{display:block;font-size:11.5px;color:#5f6f68}
+.ux-tiles3 b{font-size:17px;font-variant-numeric:tabular-nums}
+.ux-fac-count .ux-footnote{margin:6px 2px 10px!important}
+/* locked vehicles: future content — full-colour icon, the unlock path as one tagged line, price as information */
+.ux-product.is-locked .transport-icon{color:#7c8f88!important;opacity:.85}
+.ux-product.is-locked b{color:var(--ink)}
+.ux-product .ux-lock{display:block;margin-top:3px;line-height:1.5}
+.ux-product .ux-lock i{display:inline-block;margin-right:6px;padding:0 6px;border-radius:8px;background:#f3e6cf;color:#8a6232;font-style:normal;font-size:10.5px;font-weight:650}
+.ux-product.is-locked button:disabled{background:transparent!important;border:1px dashed #d8d2c3!important;color:#8a7a5c!important;opacity:1!important}
+/* stocks with no settled day yet */
+.market-chart.ux-nohist{display:grid;place-items:center;min-height:150px;border-radius:12px;background:#f6f7f2}
+.market-chart.ux-nohist .ux-emptystate{padding:18px 0}
+.market-chart.ux-nohist svg{width:30px;height:30px;fill:none;stroke:#7f9a8c;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ux-hidden{display:none!important}
+@media (orientation:landscape) and (max-height:500px){
+  .deck-stage128 .card-content128 > .card-reward{padding:6px 10px!important;display:flex!important;flex-direction:column;justify-content:center}
+  .deck-stage128 .card-content128 > .card-reward small{font-size:10.5px!important}
+  .deck-stage128 .card-content128 > .card-reward p{font-size:13px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3!important}
+  .deck-stage128 .card-content128 > .card-risk{padding:6px 10px!important;font-size:11.5px!important;line-height:1.35!important}
+  .deck-stage128 .card-content128 > .card-risk small{font-size:10.5px!important;line-height:1.3!important}
+  .deck-stage128 .card-content128 > .card-stats span{padding:4px!important}
+}
+@media (orientation:landscape) and (max-height:500px){ .deck-stage128 .card-content128 > .card-reward p{white-space:normal!important;overflow:visible!important} }
+/* drawing bar: upstream 1.3 lays the actions out for Android's quote-summary button (#quote-expand) beside 取消.
+   On the web (no such button) that left 取消 alone on a row: here the actions are one row — 取消 and a wide 建设 */
+#drawbar .db-actions:not(:has(#quote-expand)){display:flex!important;flex-direction:row!important;align-items:stretch;gap:8px!important;width:100%}
+#drawbar .db-actions:not(:has(#quote-expand)) #drawundo{flex:0 0 44px}
+#drawbar .db-actions:not(:has(#quote-expand)) #drawcancel{flex:0 0 auto;width:auto!important;min-width:76px!important;grid-column:auto!important;grid-row:auto!important}
+#drawbar .db-actions:not(:has(#quote-expand)) #drawdone{flex:1 1 auto;width:auto!important;grid-column:auto!important;grid-row:auto!important}
+/* achievements (upstream v1.4, page rebuilt in ux.js uxAchievementsHTML): one close button in a sticky header like
+   every other sheet; a summary (count, bar, medals per tier); categories with their own count; compact rows where a
+   locked medal is pale but the condition stays readable, and a bar only where there is something to count */
+.achievements-open14 #ach-close14{display:none!important}
+.achievements-open14 #modal-content > .modal-head{position:sticky;top:0;z-index:5;margin:0 -18px 6px;padding:18px 18px 10px;background:#fffef9;box-shadow:0 1px 0 var(--line)}
+.uxa-sum{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px 16px;margin:6px 0 4px;padding:14px 16px;border-radius:16px;background:#f3f5ec;border:1px solid #e1e6d8}
+.uxa-count{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
+.uxa-count b{font-size:30px;line-height:1;color:#2f5547;font-variant-numeric:tabular-nums}
+.uxa-count span{font-size:12px;color:#6b7a73}
+.uxa-bar{height:6px;border-radius:3px;background:#dfe5d6;overflow:hidden}
+.uxa-bar i,.uxa-prog i{display:block;height:100%;border-radius:inherit;background:#6f927d}
+.uxa-tiers{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}
+.uxa-tier{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 10px 0 5px;border-radius:14px;background:#fffef9;border:1px solid #e1e6d8;font-size:12px;color:#4f5f58;white-space:nowrap}
+.uxa-tier .ach-badge14{width:18px;height:20px}
+.uxa-tier b{font-variant-numeric:tabular-nums;color:#2f4a40}
+.uxa-tier small{font-size:11px;color:#7a877f}
+/* the same frame as the hub pages on wide screens, so rows can sit in two columns */
+@media not ((orientation:portrait) and (max-width:820px)){ .modal:has(.uxa-sum){width:min(820px,calc(100vw - 40px))!important;max-width:820px!important} }
+.uxa-sum p{grid-column:1/-1;margin:0;font-size:11.5px;line-height:1.5;color:#7a877f}
+.uxa-cat{display:flex;align-items:baseline;justify-content:space-between;margin:18px 2px 8px;font-size:12px;font-weight:600;letter-spacing:2px;color:#6f7d6c}
+.uxa-cat small{letter-spacing:0;font-weight:500;font-variant-numeric:tabular-nums;color:#8a968a}
+.uxa-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:8px}
+/* rows also carry upstream's ach-row14 class (its tests and hooks); these selectors outrank achievements14.css */
+.uxa-list .uxa-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:7px 12px;padding:10px 12px 10px 10px;border-radius:14px;background:#f6f7f0;border:1px solid #e3e7dc}
+.uxa-list .uxa-row > .ach-badge14{width:34px;height:38px}
+.uxa-list .uxa-row:has(.uxa-prog) > .ach-badge14{grid-row:1/span 2}
+.uxa-list .uxa-row.is-locked > .ach-badge14{opacity:.38}
+.uxa-list .uxa-row.is-done{background:#eef3e6;border-color:#d6e1cc}
+.uxa-list .uxa-row.is-done.diamond{background:#edf6f7;border-color:#b9d8e1}
+.uxa-row .uxa-txt h4{display:flex;align-items:baseline;gap:6px;margin:0 0 2px;font-size:14px;color:#2f4640}
+.uxa-row .uxa-txt h4 small{display:inline;margin:0;font-size:10.5px;font-weight:500;color:#8b968c}
+.uxa-list .uxa-row.is-locked .uxa-txt h4{color:#4c5d56}
+.uxa-row .uxa-txt p{margin:0;font-size:12px;line-height:1.5;color:#62716a}
+.uxa-prog{grid-column:2/-1;align-self:start;height:4px;border-radius:2px;background:#e0e5d8;overflow:hidden}
+.uxa-row small.uxa-when{display:block;margin-top:3px;font-size:11px;color:#6f8a76}
+.uxa-st{align-self:start;margin-top:1px;font-size:12px;font-variant-numeric:tabular-nums;color:#4f6158;white-space:nowrap}
+.uxa-st.is-none{color:#9aa49b}
+.uxa-st.is-done{display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 8px;border-radius:11px;background:#dfeadb;color:#3f6b52;font-size:11.5px;font-weight:600}
+.uxa-st.is-done::before{content:'✓';font-size:11px}
+/* line picker: never more than half the screen — the station it belongs to stays in view above it; a long line list
+   scrolls inside the picker */
+@media (orientation:portrait) and (max-width:820px){ #junction-picker{max-height:min(50dvh,calc(100dvh - var(--hud-h) - var(--safe-t) - var(--dock-btn-h) - var(--dock-bottom) - 40px))!important} }
+
+/* ---------- capsules: one family for everything that floats over the map ----------
+   Notice (status), new-city / alarm pointers, construction undo, orientation hint and the first-game coach share one
+   height, radius, paper, rule and shadow; the toast is the same shape in ink (feedback, momentary). Notices and the
+   undo pill stack in one centred column under the header instead of the undo floating alone at the top right. */
+:root{--cap-h:34px;--cap-r:17px;--cap-bg:#fffdf6f2;--cap-bd:#e6dcc2;--cap-sh:0 3px 12px #263b421a}
+.notice-wrap,#orientation-hint,.top-stack .undo-build,.ux-edge-pill{min-height:var(--cap-h);border-radius:var(--cap-r)!important;background:var(--cap-bg);border:1px solid var(--cap-bd);box-shadow:var(--cap-sh)!important;box-sizing:border-box}
+.ux-edge-pill{height:var(--cap-h)}
+.notice-wrap{padding:2px 2px 2px 14px!important}
+.notice-wrap .notice{font-size:12px;line-height:1.45;color:#5d5038;padding:5px 0}
+#notice-close,#dismiss-orientation{width:28px!important;height:28px!important;border-radius:14px!important}
+#orientation-hint{padding:2px 2px 2px 14px;font-size:12px}
+#orientation-hint button#landscape-enter{height:28px;border-radius:14px}
+#ux-coach{border-radius:var(--cap-r);box-shadow:var(--cap-sh);min-height:var(--cap-h);box-sizing:border-box}
+#toast{border-radius:var(--cap-r);padding:8px 18px;min-height:var(--cap-h);box-sizing:border-box}
+.top-stack .undo-build{position:static!important;transform:none!important;top:auto!important;right:auto!important;left:auto!important;pointer-events:auto;display:inline-flex;align-items:center;gap:7px;max-width:100%;padding:0 14px 0 6px!important;background:#fff6e2f2;border-color:#e3c99c;color:#6d5430;font-size:12px!important;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.top-stack .undo-build::before{content:'↶';display:inline-grid;place-items:center;flex:0 0 22px;height:22px;border-radius:11px;background:#f3e2bd;font-size:13px;font-weight:700}
+.top-stack .undo-build[hidden]{display:none!important}
+.top-stack .undo-build:hover{background:#fff0d2}
+/* landscape / desktop with the side details panel open: the column centres over the map that is left */
+@media not ((orientation:portrait) and (max-width:820px)){
+  body:has(#details:not([hidden])) .top-stack{left:calc(50% - 150px);width:min(560px,calc(100vw - 340px))}
+}
+/* side details panel (landscape / desktop, ~280px): 车辆 and 载客 share the first row, the − / + stepper takes the
+   second — three columns squeezed 载客 · 0% into a one-character column */
+@media not ((orientation:portrait) and (max-width:820px)){
+  #details .ux-fleet{grid-template-columns:auto minmax(0,1fr)!important;align-items:start!important;row-gap:10px}
+  #details .ux-fleet .ux-stepper{grid-column:1/-1;align-self:stretch!important;margin-left:0;width:100%}
+  #details .ux-fleet .ux-stepper button.primary{flex:1 1 auto}
+  #details .ux-fleet-load small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+/* achievements on a short landscape screen: the summary keeps its numbers, the footnote goes */
+@media (orientation:landscape) and (max-height:500px){ .uxa-sum{padding:10px 14px} .uxa-sum p{display:none} }
+/* portrait city sheet, fully expanded: the facility grid is on the page, so the peek-state shortcut strip above it
+   (same four facilities as chips) steps aside */
+@media (orientation:portrait) and (max-width:820px){ #details.is-full .ux-fac-strip{display:none} }
+/* the city's task: the same soft card as the waiting and fleet cards above it, not a ruled-off quote */
+#details .city-mission{margin:10px 0;padding:12px 14px;border:0;border-radius:14px;background:#f6f7f2}
+/* notice category icon (ux.js uxNoticeIcon sets data-kind): the same 22px round slot as the undo pill and the edge
+   pointers; a leading ★ / ♪ in the text is hidden because the icon already says it */
+.notice-wrap[data-kind]:not([data-kind=""]){padding-left:6px!important;gap:7px}
+.notice-wrap[data-kind=""]::before{display:none}
+.notice-wrap[data-kind]::before{content:'';flex:0 0 22px;height:22px;border-radius:11px;background:#f1e7cf center/14px 14px no-repeat}
+.notice-wrap[data-sym="1"] .notice::first-letter{font-size:0}
+.notice-wrap[data-kind="activity"]::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.9l-5.3 2.7 1-5.8-4.2-4.1 5.9-.9z' fill='%23a57a2c'/%3E%3C/svg%3E")}
+.notice-wrap[data-kind="concert"]::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a57a2c' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M9 17.5V6l10-2v11.5'/%3E%3Ccircle cx='6.5' cy='17.5' r='2.5'/%3E%3Ccircle cx='16.5' cy='15.5' r='2.5'/%3E%3C/svg%3E")}
+.notice-wrap[data-kind="weather"]::before{background-color:#e3ebec;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235b7d86' stroke-width='2.2' stroke-linejoin='round'%3E%3Cpath d='M7 18h10a4 4 0 0 0 .6-7.9A6 6 0 0 0 6.2 11.7 3.2 3.2 0 0 0 7 18z'/%3E%3C/svg%3E")}
+.notice-wrap[data-kind="damage"]::before{background-color:#f7d9cf;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b5573f' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4 21 19.5H3z'/%3E%3Cpath d='M12 10v4.5M12 17v.2'/%3E%3C/svg%3E")}
+.notice-wrap[data-kind="works"]::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a57a2c' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5h16M7 19.5 10.5 5h3L17 19.5M8.6 13.5h6.8'/%3E%3C/svg%3E")}
+.notice-wrap[data-kind="opening"]::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a57a2c' stroke-width='2.2' stroke-linejoin='round'%3E%3Cpath d='M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10z'/%3E%3Ccircle cx='12' cy='11' r='2'/%3E%3C/svg%3E")}
+.notice-wrap[data-kind="info"]::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a57a2c' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M12 11v5M12 8v.2'/%3E%3C/svg%3E")}

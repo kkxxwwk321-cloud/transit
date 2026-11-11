@@ -1,0 +1,3 @@
+// usage: node mkscen.cjs out.json name=file.js[:wait] ...
+const fs = require('fs'); const [out, ...items] = process.argv.slice(2);
+fs.writeFileSync(out, JSON.stringify(items.map(x => { const [name, rest] = x.split('='); const [file, wait] = rest.split(':'); return { name, js: fs.readFileSync(file, 'utf8'), wait: +(wait || 400) }; })));

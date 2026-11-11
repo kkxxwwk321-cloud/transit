@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"><meta name="theme-color" content="#fffef9"><title>交通线 · 城市经营 1.2</title><link rel="stylesheet" href="style.css?v=1.1.0&merge=127-pr3"><link rel="stylesheet" href="market.css?v=1.1.2&asset=entry-20261105"><link rel="stylesheet" href="farms.css?v=1.1-farm1"><link rel="stylesheet" href="atlas.css?v=1.1-atlas1"><link rel="stylesheet" href="web128.css?v=1283"><link rel="stylesheet" href="revision130.css"><link rel="stylesheet" href="revision13.css"><link rel="stylesheet" href="achievements14.css"></head>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"><meta name="theme-color" content="#fffef9"><title>交通线 · 城市经营 1.4</title><link rel="stylesheet" href="style.css?v=1.1.0&merge=127-pr3&ux=1120"><link rel="stylesheet" href="market.css?v=1.1.2&asset=entry-20261105"><link rel="stylesheet" href="farms.css?v=1.1-farm1"><link rel="stylesheet" href="atlas.css?v=1.1-atlas1"><link rel="stylesheet" href="web128.css?v=1283"><link rel="stylesheet" href="revision130.css"><link rel="stylesheet" href="revision13.css"><link rel="stylesheet" href="achievements14.css"></head>
 <body><canvas id="map"></canvas>
 <header>
-  <div class="brand"><span class="brand-symbol">↗</span><div><b>交通线<span id="atlas-header-name">东部</span></b><small>TRANSIT ATLAS / 1.2</small></div></div>
+  <div class="brand"><span class="brand-symbol">↗</span><div><b>交通线<span id="atlas-header-name">东部</span></b><small>TRANSIT ATLAS / 1.4</small></div></div>
   <div class="calendar"><small id="year">第一年 · 一月</small><b id="date">01 / 01 <span>周一</span></b><small id="calendar-tag">距补助10天</small></div>
   <div class="stats">
     <div class="stat stat-delivered"><small>已送达</small><b id="delivered">0</b></div>
@@ -20,8 +20,9 @@
 <div class="top-stack">
   <div id="orientation-hint" hidden><span id="orientation-status">横屏视野更宽，也可竖屏游玩</span><button id="landscape-enter">横屏</button><button id="dismiss-orientation" aria-label="关闭横屏建议">×</button></div>
   <div class="notice-wrap"><div id="notice" class="notice" role="status"></div><button id="notice-close" title="关闭提示" aria-label="关闭提示">×</button></div>
+  <button id="undo-build" class="undo-build" hidden></button>
 </div>
-<div id="toast" role="status"></div><button id="undo-build" class="undo-build" hidden></button>
+<div id="toast" role="status"></div>
 <aside id="routes" class="panel route-panel"><div class="panel-heading"><span>交通网络 <small id="routecount">0 条线路</small></span><button id="collapse" aria-expanded="true" aria-controls="route-list" title="收起 / 展开" aria-label="收起或展开线路列表">−</button></div><div id="route-list"></div><button id="newroute" class="add-route">＋ 新建线路</button><div class="route-foot"><span id="stock"></span><button id="overview" title="查看全图" aria-label="查看全图">⌖</button></div></aside>
 <aside id="junction-picker" class="panel" hidden></aside>
 <aside id="details" class="panel detail-panel" hidden></aside>
@@ -45,7 +46,7 @@
   <div class="db-actions"><button id="drawundo" title="撤销上一站" aria-label="撤销上一站" hidden>↶</button><button id="drawcancel">取消</button><button id="drawdone" class="primary">完成线路</button></div>
 </div>
 <div id="modal" class="overlay" hidden><section id="modal-content" class="modal"></section></div>
-<script src="atlas-data.js?v=1.1-atlas1"></script><script src="currency11.js?v=1.1.0"></script><script src="game.js?v=128"></script><script src="progression.js?v=1.1.0"></script><script src="world.js?v=128"></script><script src="economy.js?v=1.2.0"></script><script src="management.js?v=1.1-atlas1"></script><script src="ux.js?v=128"></script><script src="events.js?v=1.1.0"></script>
+<script src="atlas-data.js?v=1.1-atlas1"></script><script src="currency11.js?v=1.1.0"></script><script src="game.js?v=128&ux=1119"></script><script src="progression.js?v=1.1.0"></script><script src="world.js?v=128&logic=1109"></script><script src="economy.js?v=1.2.0"></script><script src="management.js?v=1.1-atlas1"></script><script src="ux.js?v=128&ux=1121"></script><script src="events.js?v=1.1.0"></script>
 <script src="balance1.js?v=1.2.0"></script><script src="market.js?v=1.1.1&asset=stock-v4"></script>
 <script src="performance.js?v=1.1.2"></script><script src="market-ui.js?v=1.1.1"></script><script src="world-upgrade.js?v=1.1-atlas1&merge=127-pr3"></script>
 <script src="region-mobility.js?v=1.2.0"></script><script src="research.js?v=1.2.0"></script>
