@@ -22,19 +22,19 @@ function syncSecondLesson131(){let t=tutorial129();if(syncingSecond131||!t||!['s
 function guideCopy129(){let t=tutorial129(),s=t?.stage;if(!t)return null;let n=id=>escapeHTML(S.cities[id]?.name||'目标城市');switch(s){
 case 'view':return ['查看城市','点一下圈出的城市。'];
 case 'city-intro':return ['城市里有什么？','这里看候车、任务和建筑；满足条件后可建设。','开始拉线'];
-case 'build':return ['连接三座城市',draft&&!$('drawdone').disabled?'点下方「建设」。':'从一座城市拖到另一座，再接上第三座。'];
+case 'build':{const [a,b]=firstRouteCue123();return ['连接三座城市',draft&&!$('drawdone').disabled?'点下方「'+escapeHTML($('drawdone').textContent)+'」。':'从'+n(a.id)+'拖到'+n(b.id)+(S.lines.length?'，延长这条线。':'，先接通两站。')];}
 case 'trim-end':return ['删除一段路',draft?.stopRemoval?'点「应用修改」，确认删路。':'从末站沿原线往回拖，越过上一站一点。'];
-case 'restore-end':return ['把城市接回来',draft?'点「应用修改」。':'按住圈出的实际线段，拖到刚移除的城市。'];
+case 'restore-end':return ['把城市接回来',draft?'点下方「'+escapeHTML($('drawdone').textContent)+'」。':'按住圈出的实际线段，拖到刚移除的城市。'];
 case 'wait':return ['等待河对岸的新城','先运行游戏，观察客流。'];
-case 'bridge':return ['架一座公路桥',bridgeDraft?'从河岸拖到对岸，再确认架桥。':modalOpen?'点「拉建公路桥」。':'点「建造」，打开「桥梁与道路」。'];
+case 'bridge':return ['架一座公路桥',bridgeDraft?'从河岸拖到对岸，再确认架桥。':modalOpen?'点「公路桥」。':'点「建造」，打开「桥梁与道路」。'];
 case 'connect':return ['接通河对岸','从城市出发，沿桥拖过两端，再连到新城。'];
 case 'fog':return ['雾会让车变慢','气象站能减轻范围内的雨雾减速。','查看覆盖范围'];
 case 'meteo':return ['气象站覆盖范围','覆盖内减速减半。气象站在城市里建设。','介绍城市建筑'];
-case 'facility-city':return ['城市里建设建筑',selected?.type==='junction'?'点「城市任务与候车」。':'点一下圈出的城市。'];
+case 'facility-city':return ['城市里建设建筑',selected?.type==='junction'?'点「城市详情」。':'点一下圈出的城市。'];
 case 'facility-read':return ['按需建设','建筑在城市面板里，满足条件后再建。','领取 ¥1600，继续'];
 case 'second-build':return ['建立第二条线',draft?(draftCost().cash>S.points?'资金不足，可先运行赚取票款。':draft.stops.includes(t.shared129)?'点「建设」，开通第二条线。':'从'+n(0)+'拖到'+n(t.shared129)+'。'):$('routes').classList.contains('collapsed')?'展开「交通网络」。':'点「新建线路」，连接'+n(0)+'与'+n(t.shared129)+'。',draft&&draftCost().cash>S.points?'先运行赚票款':null];
 case 'second-city':return ['共用城市有多条线','点一下'+n(t.shared129)+'。'];
-case 'second-pick':return ['选中第二条线',$('junction-picker').hidden?'点'+n(t.shared129)+'，再选第二条线。':'点第二条线旁的「拉线」，再到地图拖动。'];
+case 'second-pick':return ['选中第二条线',$('junction-picker').hidden?'点'+n(t.shared129)+'，再选第二条线。':'点第二条线右侧的 ↗，再到地图拖动。'];
 case 'second-extend':return ['延长第二条线',!draft?'从'+n(t.shared129)+'把第二条线接到'+n(t.target129)+'。':draft.original!==t.second129?'请取消，改为选择第二条线。':[0,t.shared129,t.target129].every(id=>draft.stops.includes(id))?'点「应用修改」，完成练习。':'沿第二条线继续拖到'+n(t.target129)+'。'];
 }return null;}
 let guideSignature129='';

@@ -86,6 +86,17 @@ tick = function(dt) {
 function layoutTutorial130() {
   if (typeof guide123 === "undefined" || guide123.hidden) return;
   let top = (document.querySelector("header")?.getBoundingClientRect().bottom || 110) + 8, target = tutorialTarget124(), r = target?.getBoundingClientRect(), g = guide123.getBoundingClientRect(), internal = target && guide123.contains(target), overlap = !internal && r && r.top < top + g.height && r.bottom > top;
+  // A map gesture has no DOM button to avoid. Keep the card off the two
+  // endpoints without moving the player's camera or covering the quote.
+  const t = S.tutorial123;
+  if (portraitMode && !target && !modalOpen && (t?.stage === 'second-extend' || t?.stage === 'connect')) {
+    const cities = (t.stage === 'connect' ? [S.cities[t.city]] : [S.cities[t.shared129], S.cities[t.target129]]).filter(Boolean);
+    const ys = cities.map(c => toScreen(c).y);
+    if (ys.some(y => y + 24 > top && y - 24 < top + g.height)) {
+      const next = Math.max(top, ...ys.map(y => y + 32));
+      if (next + g.height <= uxVisibleRect().b) top = next;
+    }
+  }
   guide123.style.top = overlap ? "auto" : top + "px";
   guide123.style.bottom = overlap ? "calc(var(--dock-height) + var(--safe-b) + 18px)" : "auto";
   cueButton124();

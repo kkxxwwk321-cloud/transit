@@ -1,5 +1,7 @@
 'use strict';
 // Interface interruptions pause simulation time; wall-clock time is never replayed.
+const foregroundPauseMessage12='已回到游戏 · 当前暂停，点 ▶ 继续';
+const interruptPauseMessage12='界面已中断 · 已暂停保存，点 ▶ 手动继续';
 function interruptionPending(){return !!S?.interruption?.pending;}
 function disableInterruptedAutoResume(){
  if(S.financial?.dailyReview)S.financial.dailyReview.wasRunning=false;
@@ -15,12 +17,14 @@ function interruptGame(reason='界面中断'){
  // An unfinished drag is only a quote, never a paid construction transaction.
  draft=null;bridgeDraft=null;engineeringPointer=null;gesture=null;pointers.clear();hideJunction();showDeleteDrop(false);$('drawbar').hidden=true;
  last=performance.now();let saved=save();updateUI();
- if(!already||saved===false)toast(saved===false?'界面已中断 · 已暂停，设备存储未能完成保存':'界面已中断 · 已暂停保存，点 ▶ 手动继续');
+ if(!already||saved===false)toast(saved===false?'界面已中断 · 已暂停，设备存储未能完成保存':interruptPauseMessage12);
 }
 function canResumeInterface(){return !window.transitAndroidBackground13&&(window.transitNativeLifecycle13||(!document.hidden&&document.visibilityState!=='hidden'));}
 function resumeAfterInterruption(){
  if(!canResumeInterface()||S.lives<=0)return false;
- if(S.interruption)S.interruption.pending=false;last=performance.now();S.paused=false;save();updateUI();return true;
+ if(S.interruption)S.interruption.pending=false;last=performance.now();S.paused=false;save();updateUI();
+ const msg=$('toast');if(msg.textContent===foregroundPauseMessage12||msg.textContent===interruptPauseMessage12)msg.classList.remove('show');
+ return true;
 }
 const closeBeforeLifecycle12=closeModal;
 closeModal=function(){closeBeforeLifecycle12();if(interruptionPending()){S.paused=true;disableInterruptedAutoResume();save();updateUI();}};
@@ -37,7 +41,7 @@ window.addEventListener('pagehide',()=>interruptGame('页面离开'));
 window.addEventListener('beforeunload',()=>interruptGame('页面关闭'));
 document.addEventListener('visibilitychange',()=>{if(!window.transitNativeLifecycle13&&(document.hidden||document.visibilityState==='hidden'))interruptGame('界面进入后台');});
 document.addEventListener('freeze',()=>{if(!window.transitNativeLifecycle13)interruptGame('页面冻结');});
-function retainInterruptionPause(){last=performance.now();if(interruptionPending()){S.paused=true;disableInterruptedAutoResume();save();updateUI();toast('已回到游戏 · 当前暂停，点 ▶ 继续');}}
+function retainInterruptionPause(){last=performance.now();if(interruptionPending()){S.paused=true;disableInterruptedAutoResume();save();updateUI();toast(foregroundPauseMessage12);}}
 window.addEventListener('focus',()=>{last=performance.now();});window.addEventListener('pageshow',retainInterruptionPause);document.addEventListener('resume',retainInterruptionPause);
 const startAtlasBeforeLifecycle12=startAtlasMap;
 startAtlasMap=function(){if(!canResumeInterface())return;startAtlasBeforeLifecycle12();if(!atlasMenuOpen&&S.lives>0)resumeAfterInterruption();};

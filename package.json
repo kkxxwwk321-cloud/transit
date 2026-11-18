@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.6.5",
   "scripts": {
-    "test": "node tests/transport.cjs && node tests/basin.cjs && node tests/brief15.cjs && node tests/route-commit.cjs && node tests/path-cache15.cjs && node tests/onboarding15.cjs && node tests/preview-hotfix15.cjs && node tests/map-swipe15.cjs && node tests/growth-hotfix152.cjs && node tests/revision153.cjs && node tests/river-render154.cjs && node tests/effects156.cjs && node tests/lifecycle156.cjs && node tests/update158.cjs && node tests/tutorial159.cjs && node tests/card-audio1511.cjs && node tests/finance-achievements1514.cjs && node tests/release16.cjs && node tests/operations16.cjs && node tests/boot16.cjs && node tests/fix161.cjs && node tests/harbor-fleet164.cjs && node tests/ports162.cjs && node tests/harbor-mixed163.cjs && node tests/patch164.cjs && node tests/casino165.cjs"
+    "test": "node tests/transport.cjs && node tests/basin.cjs && node tests/brief15.cjs && node tests/route-commit.cjs && node tests/path-cache15.cjs && node tests/ux-state15.cjs && node tests/onboarding15.cjs && node tests/preview-hotfix15.cjs && node tests/map-swipe15.cjs && node tests/growth-hotfix152.cjs && node tests/revision153.cjs && node tests/river-render154.cjs && node tests/effects156.cjs && node tests/lifecycle156.cjs && node tests/update158.cjs && node tests/tutorial159.cjs && node tests/card-audio1511.cjs && node tests/finance-achievements1514.cjs && node tests/release16.cjs && node tests/operations16.cjs && node tests/boot16.cjs && node tests/fix161.cjs && node tests/harbor-fleet164.cjs && node tests/ports162.cjs && node tests/harbor-mixed163.cjs && node tests/patch164.cjs && node tests/casino165.cjs"
   },
   "devDependencies": {
     "jsdom": "^26.1.0"

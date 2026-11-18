@@ -112,7 +112,7 @@ console.log('PASS farm unlock queues once and persists, without interrupting ges
 for(const sc of [.3,.7,1.5]){context.scale127=sc;
 run('reset();atlasMenuOpen=false;closeModal();selected=null;S.points=20000;S.tutorial123={stage:"build"};beginDraft("bus");draft.stops=[0,1,2];commitDraft(true);view.scale=scale127;selected=null;prepareRemoveStop(S.lines[0].id,1);');
 assert.equal(run('tutorialStage123()'),'restore-end');assert.equal(run('S.tutorial123.end'),1);assert.equal(run('S.lines[0].stops.join(",")'),'0,2');
-run('selected=null;function ev127(p){return {pointerId:91,clientX:view.x+p.x*view.scale,clientY:view.y+p.y*view.scale};}var a127=S.cities[0],z127=S.cities[2],mid127={x:(a127.x+z127.x)/2,y:(a127.y+z127.y)/2};beginPointer(ev127(mid127));movePointer(ev127(S.cities[1]));finishPointer({...ev127(S.cities[1]),type:"pointerup"});');
+run('selected=null;function ev127(p){return {pointerId:91,clientX:view.x+p.x*view.scale,clientY:view.y+p.y*view.scale};}var a127=S.cities[0],z127=S.cities[2],mid127=lanePoint(a127,z127,S.lines[0],.5);/* the middle of the line as drawn (the line may be drawn transit-map style, not along the chord) */beginPointer(ev127(mid127));movePointer(ev127(S.cities[1]));finishPointer({...ev127(S.cities[1]),type:"pointerup"});');
 assert.equal(run('draft.stops.join(",")'),'0,1,2');assert.equal(run('tutorialStage123()'),'restore-end');run('commitDraft(true);');assert.equal(run('tutorialStage123()'),'wait');assert.equal(run('S.lines[0].stops.join(",")'),'0,1,2');
 }
 run('S.tutorial123={stage:"trim-end",line:S.lines[0].id,end:2};S.lines[0].stops=[0,2];draft=null;save();load();tutorialUI123();');assert.equal(run('tutorialStage123()'),'restore-end');assert.equal(run('S.tutorial123.end'),1);

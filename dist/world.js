@@ -138,12 +138,14 @@ $('engineering').onclick=showEngineering;
 const esc03=e=>{if(e.code==='Escape'&&bridgeDraft){bridgeDraft=null;engineeringPointer=null;$('drawbar').hidden=true;}};document.addEventListener('keydown',esc03);
 
 /* Portrait: keep the selected line / city visible above the details sheet. */
-(function(){let d=typeof document!=='undefined'&&document.getElementById?.('details');if(!d?.getBoundingClientRect||typeof MutationObserver==='undefined')return;let lastKey='';
+// The v1.5 shell owns framing; the legacy y-only animation bypasses camera cancellation and can outlive selection.
+(function(){if(window.TRANSIT_PORTRAIT_LAYOUT)return;let d=typeof document!=='undefined'&&document.getElementById?.('details');if(!d?.getBoundingClientRect||typeof MutationObserver==='undefined')return;let lastKey='';
 function reveal(){if(d.hidden||!selected){lastKey='';return}let k=selected.type+':'+selected.id;if(k===lastKey||!portraitMode)return;lastKey=k;requestAnimationFrame(()=>{let pts=selected.type==='line'?(S.lines.find(l=>l.id===selected.id)?.stops||[]).map(i=>S.cities[i]):selected.type==='city'?[S.cities[selected.id]]:[];pts=pts.filter(Boolean);if(!pts.length)return;let top=(document.querySelector('header')?.getBoundingClientRect().bottom||60)+50,bottom=d.getBoundingClientRect().top-40,ys=pts.map(p=>p.y*view.scale+view.y),lo=Math.min(...ys),hi=Math.max(...ys),dy=0;if(hi-lo>bottom-top)dy=(top+bottom-lo-hi)/2;else if(hi>bottom)dy=bottom-hi;else if(lo<top)dy=top-lo;if(Math.abs(dy)<4)return;let from=view.y,t0=performance.now();(function step(t){let p=Math.min(1,(t-t0)/280);view.y=from+dy*(1-Math.pow(1-p,3));if(p<1)requestAnimationFrame(step)})(t0)})}
 new MutationObserver(reveal).observe(d,{attributes:true,attributeFilter:['hidden'],childList:true});})();
 /* View comfort: smooth "whole map", soft pan limits, and reveal newly unlocked cities. */
 function fitTarget(){let v={x:view.x,y:view.y,scale:view.scale};fit();let t={x:view.x,y:view.y,scale:view.scale};view.x=v.x;view.y=v.y;view.scale=v.scale;return t}
-function animateView(t,ms=320){if(typeof requestAnimationFrame==='undefined'){Object.assign(view,t);return}let f={x:view.x,y:view.y,scale:view.scale},t0=performance.now();animateView.id=(animateView.id||0)+1;let id=animateView.id;(function step(n){if(id!==animateView.id)return;let p=Math.min(1,(n-t0)/ms),e=1-Math.pow(1-p,3);view.scale=f.scale+(t.scale-f.scale)*e;view.x=f.x+(t.x-f.x)*e;view.y=f.y+(t.y-f.y)*e;if(p<1)requestAnimationFrame(step)})(t0)}
+// Note: animation ownership survives manual takeover/edit start — .agents/notes/implemented/feature/2026-11-08-design-pass.md
+function animateView(t,ms=320){if(typeof requestAnimationFrame==='undefined'){Object.assign(view,t);return}let f={x:view.x,y:view.y,scale:view.scale},t0=performance.now();animateView.id=(animateView.id||0)+1;let id=animateView.id;animateView.activeId=id;(function step(n){if(id!==animateView.id)return;let p=Math.min(1,(n-t0)/ms),e=1-Math.pow(1-p,3);view.scale=f.scale+(t.scale-f.scale)*e;view.x=f.x+(t.x-f.x)*e;view.y=f.y+(t.y-f.y)*e;if(p<1)requestAnimationFrame(step);else animateView.activeId=null})(t0)}
 function animateFit(){animateView(fitTarget())}
 if(typeof document!=='undefined'&&document.getElementById?.('overview'))$('overview').onclick=animateFit;
 (function(){if(typeof requestAnimationFrame==='undefined'||!document.querySelector)return;let seen=-1;

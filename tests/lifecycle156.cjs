@@ -19,7 +19,11 @@ for(const map of ['east','west']) {
   assert.equal(run('resumeAfterInterruption()'),false,'hidden resume is blocked');
   g.setHidden(false);w.dispatchEvent(new w.Event('pageshow'));run('closeModal()');
   assert(run('S.paused&&interruptionPending()'),'foreground and modal close stay paused');
+  const message=w.document.getElementById('toast');
+  assert.match(message.textContent,/当前暂停/);
+  if(map==='west')run("toast('设备存储空间不足')");
   assert.equal(run('resumeAfterInterruption()'),true);assert.equal(run('S.paused'),false);
+  assert.equal(message.classList.contains('show'),map==='west','resume dismisses only the obsolete pause instruction');
   run('save();load()');assert.equal(run('S.lines.length'),1);assert.equal(run('S.points'),points);
 }
 assert.equal(run('runtimeFault13'),null);assert.equal(g.errors.length,0);g.dom.window.close();

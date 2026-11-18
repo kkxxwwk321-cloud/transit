@@ -23,7 +23,7 @@ function portBadges164(){
  portLayoutMemo164={owner:S,key,items};return items;
 }
 function portHit164(p){let best=null;for(let item of portBadges164()){let d=Math.hypot(p.x-item.p.x,p.y-item.p.y)*view.scale;if(d<=25&&(!best||d<best.d))best={c:item.c,d};}return best?.c||null;}
-function beginHarborRoute164(id,type=null){let c=S.cities[id];if(!c?.harbor||c.dormant||!isOcean16())return false;type=type||(isMarine16(uxLastType)&&S.unlocked.includes(uxLastType)?uxLastType:'ship');if(!isMarine16(type)||!S.unlocked.includes(type))return false;if(realCities().filter(c=>c.harbor&&!c.dormant).length<2){toast('至少需要两个已建港口的城市才能连接航线');return false;}beginDraft(type);uxLastType=type;draft.stops=[id];draftBar();$('drawtext').textContent=c.name+'港 → 拖到另一个港口圆点';return true;}
+function beginHarborRoute164(id,type=null){let c=S.cities[id];if(S.lives<=0||!c?.harbor||c.dormant||!isOcean16())return false;type=type||(isMarine16(uxLastType)&&S.unlocked.includes(uxLastType)?uxLastType:'ship');if(!isMarine16(type)||!S.unlocked.includes(type))return false;if(realCities().filter(c=>c.harbor&&!c.dormant).length<2){toast('至少需要两个已建港口的城市才能连接航线');return false;}beginDraft(type);uxLastType=type;draft.stops=[id];draftBar();$('drawtext').textContent=c.name+'港 → 拖到另一个港口圆点';return true;}
 const cityHitBefore164=hitCity;
 hitCity=function(p){if(isMarine16(draft?.type)||harborPointer164)return portHit164(p);if(draft&&portHit164(p))return null;return cityHitBefore164(p);};
 const elasticBefore164=elasticTouch;

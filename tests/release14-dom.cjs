@@ -38,5 +38,21 @@ run('S.inventory.tunnel=0;S.points=50000;beginDraft("bus");draft.stops=[0,1];var
 // Reading achievements marks red dot read, leaves game economy unchanged.
 run('S.activityCards=null;S.financial=null;var cash14=S.points;showAtlasMaps(false);showAchievements14();');assert.equal(w.document.querySelectorAll('.ach-row14').length,24);assert(w.document.body.classList.contains('achievements-open14'));assert.equal(run('S.points'),run('cash14'));assert(!w.document.querySelector('#achievements-entry14').classList.contains('has-new'));run('closeModal();');assert(!w.document.body.classList.contains('achievements-open14'));
 run('S.mapId="east";localStorage.setItem(ATLAS_BEST,JSON.stringify({east:99,west:180}));achSync14();');assert(run('achievements14.unlocked.day180'));assert(run('achievements14.unlocked.west'));assert.equal(run('achievements14.best.east'),99);
+// Two independent maps can have identical line type/stop IDs. Their cached drawing paths cannot share city objects.
+const realNow14=w.performance.now.bind(w.performance);let octClock14=100000;w.performance.now=()=>octClock14;
+run(`for(const map of ['east','west']){atlasSelected=map;atlasRestart=true;startAtlasBeforeLifecycle12();S.points=100000;draft={type:'bus',name:'cache regression',color:'#bd5c4c',stops:[0,1],stopRemoval:null};commitDraft(true);if(draft)cancelDraft(false);S.paused=true;save();}`);
+assert.equal(run('S.lines.length'),1);run('uxOctPlanNow();');
+for(const map of ['east','west']){
+  run(`atlasSelected='${map}';atlasRestart=false;startAtlasBeforeLifecycle12();S.paused=true;`);
+  for(const dt of [0,1000]){
+    octClock14+=dt;
+    const endpoints14=run(`(()=>{const l=S.lines[0],a=S.cities[l.stops[0]],b=S.cities[l.stops[1]];return [Math.hypot(lanePoint(a,b,l,0).x-a.x,lanePoint(a,b,l,0).y-a.y),Math.hypot(lanePoint(a,b,l,1).x-b.x,lanePoint(a,b,l,1).y-b.y)]})()`);
+    assert(endpoints14.every(d=>d<1e-8),`map ${map}, +${dt}ms: cached line left its stations by ${endpoints14}`);
+  }
+}
+run('save();load();');
+assert(run('uxOctPath(S.cities[0],S.cities[1],"bus")[0]===S.cities[0]'),'reload must not retain city objects from the previous game state');
+w.performance.now=realNow14;
+console.log('PASS bent-path cache follows actual map switch and reload, immediately and after the throttle interval');
 await Promise.resolve();assert.deepEqual(errors,[]);assert.equal(run('runtimeFault13'),null);console.log('PASS v1.4 terrain enclosure/tunnels/land pass/buildable start/persistent geometry/legacy saves; 24 achievements/unique diamond/tutorial skip/lifetime reload and rewind/reset retention/total-share threshold/card success/circuit/unread/modal/economy');dom.window.close();
 })().catch(e=>{console.error(e);process.exitCode=1;dom.window.close();});

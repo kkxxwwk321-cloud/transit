@@ -55,7 +55,9 @@ assert.equal(run('S.climate.events.some(e=>e.type==="typhoon")'),false);
 run('ensureTyphoonSeason(0);ensureTyphoonSeason(1)');assert.equal(run('S.climate.events.some(e=>e.type==="typhoon")'),false);
 console.log('PASS west 2% / east 0.8%, all existing eligibility/cooldown guards, east seasons, west old/new save typhoon removal');
 
-run('atlasMenuOpen=false;closeModal();S.tutorial123=null;S.notices130={seen:{},unread:{},queue:[]};S.points=7000;S.cities.forEach(c=>c.dormant=false);constructionNotices130();showNotice130();');
+// The grouped notice waits until a first line exists or day 3 (design pass 2026-11-17: no popup in the first second of
+// a new game); this checks the grouping, so the scene is set on day 3.
+run('atlasMenuOpen=false;closeModal();S.tutorial123=null;S.notices130={seen:{},unread:{},queue:[]};S.points=7000;S.day=Math.max(S.day,3);S.cities.forEach(c=>c.dormant=false);constructionNotices130();showNotice130();');
 const m=w.document.querySelector('#modal-content');
 assert.match(m.textContent,/新设施可以建设了/);assert.match(m.textContent,/气象站/);assert.match(m.textContent,/交通枢纽/);
 assert.equal(m.querySelectorAll('.unlock-item158').length,2);assert.equal(run('notices130().queue.length'),0);
