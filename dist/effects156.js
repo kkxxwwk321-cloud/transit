@@ -1,5 +1,5 @@
 'use strict';
-// Local connection and card effects; background music has independent controls.
+// Local connection, card and ship effects.
 const effectsKey156 = 'transit-effects-v1';
 let effectsPrefs156 = { enabled: true, volume: 0.5 };
 try {

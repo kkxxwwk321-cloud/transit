@@ -43,7 +43,7 @@ updateUI = function () {
 // Action feedback (money moved, something built) stays readable for a moment: idle information arriving meanwhile
 // ("…可以建设", "…可经营", "…已开放") waits its turn instead of replacing it. Warnings, losses and everything else are
 // never delayed. The lifecycle "paused, press ▶" note is skipped for a brand-new game (nothing
-// to resume yet; the coach is on screen) and, for a finished game, says what the header button now does.
+// to resume yet; the coach is on screen) and, for a finished game, stays valid on both the map and the map picker.
 const UX_FEEDBACK = /已支付|支出|退还|全退|已建设|建成|已应用|已购买|买入|卖出|已出售/;
 const UX_IDLE_INFO = /可以建设|可经营|可以经营|点击城市查看|已开放|开放了|新城市|发现待接入/;
 let uxToastHold = 0, uxToastQueued = null, uxToastTimer = 0;
@@ -51,10 +51,11 @@ const uxToastBase = toast;
 toast = function (t, ...a) {
   t = String(t ?? '');
   if (/^已回到游戏/.test(t)) {
-    if (S && S.lives <= 0) t = '本局已结束 · 点右上「结算」查看成绩，或选图开新局';
+    if (S && S.lives <= 0) t = '本局已结束';
     else if (S && !S.lines.length && S.day < 1) return;
   }
   if (/^从一座城市拖向另一座/.test(t) && uxCoachActive()) return;   // the coach already says this
+  if (/^从河岸拖向对岸/.test(t) && typeof bridgeDraft !== 'undefined' && bridgeDraft) return;   // the bridge bar already says this
   const now = typeof performance !== 'undefined' ? performance.now() : 0;
   if (now < uxToastHold && UX_IDLE_INFO.test(t)) {
     uxToastQueued = [t, ...a]; clearTimeout(uxToastTimer);
@@ -230,35 +231,69 @@ toast = function (t) {
   uxToast(uxRename(t));
   uxPlaceToast();
 };
-// Portrait: float messages just above whatever sheet is at the bottom, inside the thumb zone.
+// Where a message floats. Portrait: just above whatever sheet is at the bottom (thumb zone). Landscape / desktop: the
+// stylesheet's place (top of the map on short screens, above the dock otherwise).
+// Either way it must not land on the selection: the selection is framed in the free map, so one of its stations often
+// sits right where the toast goes. Candidate spots — the usual row, then the other end of the map (under the top status
+// column; only the strip under the header when a portrait sheet is fully open), each centred / left / right of the
+// free map — are tried in order, and the toast takes the first that leaves every visible station or ＋ tab of the
+// selection clear, node included. A long message that fits nowhere in the map (a reward or a lost-life warning beside
+// a full portrait sheet) goes over the bottom of the sheet, above the dock, rather than onto the selection.
 function uxPlaceToast() {
-  const el = uxEl('toast'); if (!el) return;
-  if (!portraitMode) { el.style.top = el.style.bottom = el.style.left = ''; return; }
-  let top = H;
-  for (const sel of ['#ux-coach', '#junction-picker', '#details', '#routes', '#drawbar', 'footer .dock']) {
-    const e = document.querySelector(sel);
-    if (!e || e.hidden || typeof getComputedStyle !== 'function' || getComputedStyle(e).display === 'none') continue;
-    const r = e.getBoundingClientRect(); if (r.height && r.top > H * 0.35) top = Math.min(top, r.top);
-  }
-  // A sheet that fills most of the screen leaves no room above it: use the top of the map instead.
-  const tall = ['details', 'junction-picker'].some(id => { const e = uxEl(id); return !!e && !e.hidden && e.getBoundingClientRect().top < H * .35; });
-  el.style.left = '';
-  if (tall) { el.style.bottom = 'auto'; el.style.top = ((document.querySelector('header')?.getBoundingClientRect().bottom || 60) + 8) + 'px'; return; }
-  // The selection is framed in the space above the sheet, so its lowest station often sits right where the toast
-  // goes. Two places are tried — above the sheet, then under the top status column — and the toast takes the first
-  // that covers none of the selection's stations or ＋ tabs (with room to spare if possible, else the fewest).
-  const w = el.offsetWidth || 200, h = el.offsetHeight || 36, pts = uxSelectionPoints().map(p => toScreen(p));
+  const el = uxEl('ux-feedback') || uxEl('toast'); if (!el) return;
+  el.style.top = el.style.bottom = el.style.left = '';
+  const vis = id => { const e = uxEl(id), r = e && !e.hidden && (typeof getComputedStyle !== 'function' || getComputedStyle(e).display !== 'none') && e.getBoundingClientRect?.(); return r && r.height ? r : null; };
+  const headB = document.querySelector('header')?.getBoundingClientRect().bottom || 60, dockT = document.querySelector('footer .dock')?.getBoundingClientRect().top || H;
   const st = document.querySelector('.top-stack'), sr = st?.getBoundingClientRect && (typeof getComputedStyle !== 'function' || getComputedStyle(st).visibility !== 'hidden') ? st.getBoundingClientRect() : null;
-  const upper = Math.max((document.querySelector('header')?.getBoundingClientRect().bottom || 60) + 8, sr && sr.height ? sr.bottom + 8 : 0);
-  // centred first; a line running down the middle of the screen pushes it to one side
-  const xs = [W / 2, 16 + w / 2, W - 16 - w / 2].filter((x, i) => !i || w < W - 48), spots = [];
-  for (const [y, place] of [[top - 10 - h, () => { el.style.top = 'auto'; el.style.bottom = (H - top + 10) + 'px'; }], [upper, () => { el.style.bottom = 'auto'; el.style.top = upper + 'px'; }]])
+  const upper = Math.max(headB + 8, sr && sr.height ? sr.bottom + 8 : 0);
+  const w = el.offsetWidth || 200, h = el.offsetHeight || 36;
+  const atTop = y => () => { el.style.bottom = 'auto'; el.style.top = y + 'px'; }, atBottom = b => () => { el.style.top = 'auto'; el.style.bottom = (H - b) + 'px'; };
+  let mapL = 0, mapR = W, mapB, rows, sheetSpot = null;
+  if (portraitMode) {
+    let top = H;
+    for (const sel of ['#ux-coach', '#junction-picker', '#details', '#routes', '#drawbar', 'footer .dock']) {
+      const e = document.querySelector(sel);
+      if (!e || e.hidden || typeof getComputedStyle !== 'function' || getComputedStyle(e).display === 'none') continue;
+      const r = e.getBoundingClientRect(); if (r.height && r.top > H * 0.35) top = Math.min(top, r.top);
+    }
+    // a sheet that fills most of the screen leaves only a strip of map under the header
+    const tallTop = Math.min(...['details', 'junction-picker'].map(id => { const r = vis(id); return r && r.top < H * .35 ? r.top : Infinity; }));
+    mapB = tallTop < Infinity ? tallTop : top;
+    rows = tallTop < Infinity ? [[upper, atTop(upper)], ...(tallTop - 10 - h > upper + h ? [[tallTop - 10 - h, atTop(tallTop - 10 - h)]] : [])]
+      : [[top - 10 - h, atBottom(top - 10)], [upper, atTop(upper)]];
+    // over the bottom of a details / picker sheet as a last resort — never over the network tray, whose chips are controls
+    if (mapB < dockT - 10 - h && vis('details')) sheetSpot = { key: 'sheet', x: W / 2, y: dockT - 10 - h, place: atBottom(dockT - 10) };
+  } else {
+    // side panels (details, line picker, route list) take the right or left of the map
+    for (const id of ['details', 'junction-picker']) { const r = vis(id); if (r && r.left > W / 2) mapR = Math.min(mapR, r.left); }
+    const rl = vis('routes'); if (rl && rl.right < W / 2 && rl.top < H / 2) mapL = Math.max(mapL, rl.right);
+    mapB = dockT;
+    const r0 = el.getBoundingClientRect?.() || { top: H - 80 }, home = r0.top < H / 2;
+    rows = home ? [[r0.top, atTop(r0.top)], [dockT - 10 - h, atBottom(dockT - 10)]] : [[r0.top, atTop(r0.top)], [upper, atTop(upper)]];
+  }
+  const pts = uxSelectionPoints().map(p => { const q = toScreen(p); q.r = S.cities.includes(p) ? uxNodePx(p) + 4 : 13; return q; })
+    .filter(q => q.y + q.r > headB && q.y - q.r < mapB && q.x - q.r < mapR && q.x + q.r > mapL);   // under a panel it is hidden anyway
+  // …and of every town on screen: the capsule can stay up for the 20 s undo window, it must not sit on a town
+  for (const c of realCities()) { if (c.dormant && !c.discovered) continue; const q = toScreen(c); if (q.x < -20 || q.x > W + 20 || q.y < headB - 20 || q.y > mapB + 20) continue; q.r = uxNodePx(c) + 4; pts.push(q); }
+  // …and of the notices at the top (status column)
+  for (const n of document.querySelectorAll('.top-stack > :not([hidden])')) { const r = n.getBoundingClientRect(); if (r.width && r.height) for (let x = r.left + r.height / 2; x < r.right; x += r.height) pts.push({ x, y: r.top + r.height / 2, r: r.height / 2 }); }
+  for (const p of document.querySelectorAll('.ux-edge-pill:not([hidden])')) { const r = p.getBoundingClientRect(); if (r.width) pts.push({ x: r.left + r.width / 2, y: r.top + r.height / 2, r: Math.max(r.width, r.height) / 2 }); }
+  // centred in the free map first; a line running down the middle pushes it to one side
+  const mid = (mapL + mapR) / 2, xs = [W / 2, mid, mapL + 16 + w / 2, mapR - 16 - w / 2].filter((x, i, a) => x - w / 2 >= mapL + 8 - (i ? 0 : 1e9) && x + w / 2 <= mapR - 8 + (i ? 0 : 1e9) && a.indexOf(x) === i);
+  const spots = [];
+  for (const [y, place] of rows)
     for (const x of xs) spots.push({ key: spots.length, x, y, place: () => { place(); el.style.left = x === W / 2 ? '' : x + 'px'; } });
-  const cover = (s, m) => pts.filter(p => p.x > s.x - w / 2 - m && p.x < s.x + w / 2 + m && p.y > s.y - m && p.y < s.y + h + m).length;
+  if (sheetSpot) spots.push(sheetSpot);
+  const cover = (s, m) => pts.filter(p => p.x + p.r > s.x - w / 2 - m && p.x - p.r < s.x + w / 2 + m && p.y + p.r > s.y - m && p.y - p.r < s.y + h + m).length;
   // while one toast shows, it stays where it is as long as that spot is still clear (no hopping while the camera glides)
-  const shown = el.classList.contains('show') && el.uxText === el.textContent ? spots.find(s => s.key === el.uxSpot && !cover(s, 4)) : null;
-  const pick = shown || spots.find(s => !cover(s, 18)) || spots.find(s => !cover(s, 4)) || spots.reduce((a, s) => cover(s, 4) < cover(a, 4) ? s : a);
-  pick.place(); el.uxSpot = pick.key; el.uxText = el.textContent;
+  // 'same toast' = same message over the same layout (the undo countdown ticks every second and is ignored)
+  const txt = (uxEl('toast')?.textContent || '') + '|' + Math.round(mapB) + '|' + Math.round(mapR);
+  const shown = el.classList.contains('show') && el.uxText === txt ? spots.find(s => s.key === el.uxSpot && !cover(s, 2)) : null;
+  // …unless the preferred place (first spot) has come free meanwhile — e.g. the camera finished framing the selection:
+  // then it returns there once
+  if (shown && shown !== spots[0] && !cover(spots[0], 12)) { spots[0].place(); el.uxSpot = spots[0].key; el.uxText = txt; return; }
+  const pick = shown || spots.find(s => !cover(s, 12)) || spots.find(s => !cover(s, 2)) || spots.reduce((a, s) => cover(s, 2) < cover(a, 2) ? s : a);
+  pick.place(); el.uxSpot = pick.key; el.uxText = txt;
 }
 const uxStopUndo = offerStopUndo;
 offerStopUndo = function (...args) { uxStopUndo(...args); uxPlaceToast(); };
@@ -286,7 +321,8 @@ function uxLineSheet(rebuild) {
   const seats = vs.reduce((n, v) => n + vehCap(v), 0), load = vs.reduce((n, v) => n + v.people.length, 0);
   const blocked = l.stops.some((id, i) => i && S.blockages[key(S.cities[l.stops[i - 1]], S.cities[id], l.type)]);
   const stops = l.stops.filter(id => S.cities[id] && !S.cities[id].removed && S.cities[id].kind !== 'bridgehead');
-  const sig = JSON.stringify([l.id, l.name, l.color, l.stops, l.retiring, inv, S.points >= T.vehicle, blocked,
+  const pick = uxStopPickFor(l.id);
+  const sig = JSON.stringify([l.id, l.name, l.color, l.stops, l.retiring, inv, S.points >= T.vehicle, blocked, pick ? [...pick.marked] : null,
     vs.map(v => [v.id, v.cars, v.people.length, uxServiceLabel(v), isTrain(v.type) && v.cars < 8 && S.points >= carPrice(v)])]);
   if (!rebuild && sig === uxLineSheet.sig && !el.hidden) return;
   uxLineSheet.sig = sig; el.hidden = false;
@@ -296,12 +332,40 @@ function uxLineSheet(rebuild) {
 <button class="ux-icon" onclick="renameLine(${l.id})" title="名称 / 颜色" aria-label="修改名称或颜色">✎</button><button class="close" onclick="clearSelection()" aria-label="关闭">×</button></div>
 ${blocked ? '<p class="ux-alert">部分路段停止接入，两侧车辆分段运行。拉线时可支付维修费，或重新接桥改线。</p>' : ''}
 ${!vs.length && !l.retiring ? '<p class="ux-alert">还没有车辆，乘客不会使用这条线路。点「＋」加一辆。</p>' : ''}
-<div class="ux-fleet" style="--lc:${l.color}"><div><small>车辆</small><b>${vs.length}<span> 辆</span></b></div><div class="ux-fleet-load"><small>载客${seats ? ' · ' + Math.round(load / seats * 100) + '%' : ''}</small><b>${load}<span> / ${seats}</span></b><span class="ux-bar"><i style="width:${seats ? Math.min(100, load / seats * 100) : 0}%"></i></span></div>
+<div class="ux-fleet ux-fleet-row" style="--lc:${l.color}"><div class="ux-fleet-txt"><small class="ux-fleet-kind">车辆</small><b class="ux-fleet-n">${vs.length}<span> 辆</span></b><span>载客 <b>${load}</b>/${seats}${seats ? ' · ' + Math.round(load / seats * 100) + '%' : ''}</span><span class="ux-bar"><i style="width:${seats ? Math.min(100, load / seats * 100) : 0}%"></i></span></div>
 <div class="ux-stepper"><button onclick="uxFleetMinus(${l.id})" ${!vs.some(v => !v.recall) ? 'disabled' : ''} aria-label="回收一辆">−</button><button class="primary" onclick="uxFleetPlus(${l.id})" ${canAdd ? '' : 'disabled'}>＋ ${inv > 0 ? '库存 ' + inv : '¥' + T.vehicle}</button></div></div>
-<div class="ux-route" style="--lc:${l.color}">${stops.map((id, k) => `<span class="ux-hop">${k ? '<i></i>' : ''}<span class="ux-stop">${escapeHTML(S.cities[id].name)}${stops.length > 2 && !l.retiring ? `<button onclick="prepareRemoveStop(${l.id},${id})" aria-label="移除${escapeHTML(S.cities[id].name)}这一站">×</button>` : ''}</span></span>`).join('')}</div>
+<div class="ux-route${pick ? ' is-picking' : ''}" style="--lc:${l.color}">${stops.map((id, k) => `<span class="ux-hop">${k ? '<i></i>' : ''}${pick ? `<button class="ux-stop${pick.marked.has(id) ? ' is-off' : ''}" onclick="uxStopMark(${l.id},${id})" aria-pressed="${pick.marked.has(id)}">${escapeHTML(S.cities[id].name)}</button>` : `<span class="ux-stop">${escapeHTML(S.cities[id].name)}${stops.length > 2 && !l.retiring ? `<button onclick="prepareRemoveStop(${l.id},${id})" aria-label="移除${escapeHTML(S.cities[id].name)}这一站">×</button>` : ''}</span>`}</span>`).join('')}${l.retiring || pick ? '' : `<span class="ux-route-tools"><button onclick="uxStopPickToggle(${l.id})" ${stops.length > 2 ? '' : 'disabled'}>多站移除</button><button onclick="uxRedraw(${l.id})">重画</button></span>`}</div>
+${!l.retiring && pick ? `<div class="ux-route-tools is-picking"><span>点选要去掉的站 · 已选 ${pick.marked.size}</span><button onclick="uxStopPickToggle(${l.id})">取消</button><button class="primary" onclick="uxStopPickApply(${l.id})" ${pick.marked.size ? '' : 'disabled'}>预览移除 ${pick.marked.size || ''} 站</button></div>` : ''}
 
 ${vs.length ? `<div class="ux-list">${vs.map(v => `<div class="ux-row"><span><b>#${v.id}</b> ${uxServiceLabel(v)}<small>${vs.length > 1 ? v.people.length + '/' + vehCap(v) + ' 人' : ''}${v.people.length >= vehCap(v) ? ' · <em class="danger">满员</em>' : ''}${isTrain(v.type) ? ' · ' + v.cars + '/8 节' : ''}</small></span><span class="ux-row-actions">${isTrain(v.type) && v.cars < 8 ? `<button onclick="upgradeCar(${v.id})" ${S.points < carPrice(v) ? 'disabled' : ''}>＋车厢 ¥${carPrice(v)}</button>` : ''}<button onclick="setService(${v.id})">方案</button></span></div>`).join('')}</div>` : ''}
 <div class="ux-actions-row">${l.type !== 'air' ? `<button onclick="openInfrastructure(${l.id})">道路升级</button>` : ''}<button class="ux-danger" onclick="uxDeleteLine(${l.id})">${uxArmedDelete?.id === l.id && uxArmedDelete.until > performance.now() ? '再点一次确认撤销' : '取消线路'}</button></div>`;
+}
+// Re-routing a whole line (user 2026-11-15: 大改线路). Both tools only open an edit draft of the line; the quote in the
+// route bar and 应用修改 commit it, as for any drag edit, and 取消 leaves the line as it was.
+// - 多站移除: mark several stops in the sheet, then preview the line without them (one quote, one apply);
+// - 整条重画: the line keeps its id, colour, vehicles and number; its route is drawn again from scratch (the old route
+//   stays on the map as a pale band, see uxDraftGhost).
+// Note: game-owned selection — .agents/notes/implemented/feature/2026-11-08-design-pass.md
+let uxStopPick = null;   // { game, line, marked: Set(city id) }; IDs are reused after reset/load
+function uxStopPickFor(lineId) {
+  if (uxStopPick && (uxStopPick.game !== S || uxStopPick.line !== lineId)) uxStopPick = null;
+  return uxStopPick;
+}
+function uxStopPickToggle(lineId) { uxStopPick = uxStopPickFor(lineId) ? null : { game: S, line: lineId, marked: new Set() }; haptic(); showDetails(true); }
+function uxStopMark(lineId, cityId) { const pick = uxStopPickFor(lineId); if (!pick) return; const m = pick.marked; m.has(cityId) ? m.delete(cityId) : m.add(cityId); haptic(); showDetails(true); }
+function uxStopPickApply(lineId) {
+  const l = S.lines.find(x => x.id === lineId), pick = uxStopPickFor(lineId); if (!l || l.retiring || !pick?.marked.size) return;
+  const keep = l.stops.filter(id => S.cities[id] && !pick.marked.has(id));
+  // Keep the player's chosen crossings between surviving cities; never leave bridgeheads as terminals.
+  while (keep.length && S.cities[keep[0]].kind === 'bridgehead') keep.shift();
+  while (keep.length && S.cities[keep.at(-1)].kind === 'bridgehead') keep.pop();
+  if (keep.filter(id => S.cities[id] && S.cities[id].kind !== 'bridgehead').length < 2) return toast('一条线路至少连接两座城市；整条撤销请用「取消线路」');
+  uxStopPick = null; beginDraft(l.type, l.id); draft.stops = keep; draftBar(); updateUI();
+}
+function uxRedraw(lineId) {
+  const l = S.lines.find(x => x.id === lineId); if (!l || l.retiring) return;
+  uxStopPick = null; beginDraft(l.type, l.id); draft.stops = []; draft.uxRedraw = true; draftBar(); updateUI();
+  toast(typeof isMarine16 === 'function' && isMarine16(l.type) ? '从港口圆点拖出新的航线 · 可连续连接多个港口' : '从一座城市拖出新的走向 · 原走向留作参照');
 }
 // Cancellation opens an itemised recovery quote before any assets are retired.
 let uxArmedDelete = null;
@@ -340,13 +404,16 @@ function uxWaitList(el, rows) {
   const total = g => items.filter(x => x.group === g).reduce((s, x) => s + x.n, 0);
   const groups = [...new Set(items.map(x => x.group))].sort((a, b) => (/^本圈/.test(b) - /^本圈/.test(a)) || total(b) - total(a));
   const box = document.createElement('section'); box.className = 'ux-wait';
-  box.innerHTML = '<div class="ux-wait-head"><span>等车去</span><small>人数</small><small>最久</small></div>';
+  const all = items.reduce((s, x) => s + x.n, 0);
+  box.innerHTML = '<div class="ux-wait-head"><span>等车去</span><small>' + all + ' 人 · ' + items.length + ' 个去向</small></div>';
   rows[0].before(box);
   for (const g of groups) {
     if (g && (groups.length > 1 || !/^本圈/.test(g))) { const h = document.createElement('div'); h.className = 'ux-wait-group'; h.innerHTML = escapeHTML(g) + '<small>' + total(g) + ' 人</small>'; box.appendChild(h); }
     for (const x of items.filter(i => i.group === g).sort((a, b) => b.n - a.n || b.wait - a.wait)) {
       x.b.className = 'ux-wait-row' + (x.wait > 120 ? ' is-late' : '');
-      x.b.innerHTML = '<span style="color:' + x.color + '">' + escapeHTML(x.what) + '</span><b>' + x.n + '</b><small>' + (x.wait ? x.wait + 's' : '—') + '</small>';
+      // tile: count large, the destination (shape + colour, as on the map) under it, the longest wait only when it matters
+      const m = x.what.match(/^([■◆●▲])\s*(.*)$/), glyph = m ? m[1] : '', name = m ? m[2] : x.what;
+      x.b.innerHTML = '<b>' + x.n + '</b><span style="color:' + x.color + '"><i>' + glyph + '</i>' + escapeHTML(name) + '</span>' + (x.wait > 60 ? '<small>' + x.wait + 's</small>' : '');
       box.appendChild(x.b);
     }
   }
@@ -361,10 +428,11 @@ function uxLoadBlock(el) {
   const c = S.cities[selected.id]; if (!c || typeof capacity !== 'function') return;
   const n = c.q.filter(p => !p.cardId && !p.eventId).length, cap = capacity(c), limit = c.shape === 1 ? 205 : 160;
   const p = Math.max(0, c.congestionPressure || 0), full = n >= cap, special = c.q.length - n;
-  const state = c.shield > 0 ? ['保护中 ' + Math.ceil(c.shield) + 's', 'is-calm'] : full ? ['超出 ' + (n - cap), 'is-over'] : n >= cap * .8 ? ['接近满员', 'is-near'] : ['未满', 'is-calm'];
+  const ended = S.lives <= 0, lost = ended && S.uxLifeLog?.at(-1)?.id === c.id;
+  const state = ended ? [lost ? '本局失守' : '本局已结束', lost ? 'is-over' : 'is-calm'] : c.shield > 0 ? ['保护中 ' + Math.ceil(c.shield) + 's', 'is-calm'] : full ? ['超出 ' + (n - cap), 'is-over'] : n >= cap * .8 ? ['接近满员', 'is-near'] : ['未满', 'is-calm'];
   const box = document.createElement('section'); box.className = 'ux-load';
   box.innerHTML = '<div class="ux-load-main"><b>' + n + '</b><span>人候车 · 容量 ' + cap + (special ? ' · 另有活动乘客 ' + special : '') + '</span><em class="' + state[1] + '">' + state[0] + '</em></div>'
-    + '<div class="ux-load-press"><span class="ux-bar' + (full ? ' is-over' : '') + '"><i style="width:' + Math.min(100, p / limit * 100) + '%"></i></span><small>' + (!full && p > 0 ? '满员计时回落中 ' : '满员计时 ') + Math.floor(p) + '/' + Math.round(limit) + ' 秒 · 计满扣一条命</small></div>';
+    + (ended ? '' : '<div class="ux-load-press"><span class="ux-bar' + (full ? ' is-over' : '') + '"><i style="width:' + Math.min(100, p / limit * 100) + '%"></i></span><small>' + (!full && p > 0 ? '满员计时回落中 ' : '满员计时 ') + Math.floor(p) + '/' + Math.round(limit) + ' 秒 · 计满扣一条命</small></div>');
   g.replaceWith(box);
   const bar = box.nextElementSibling; if (bar?.classList?.contains('bar')) bar.remove();
 }
@@ -439,10 +507,16 @@ openCity = function (id) { uxFocusCity(id); };
 /* ---------- shop ---------- */
 shop = function () {
   openModal(`<div class="modal-head"><div><h2>交通采购</h2><small>余额 ${money(S.points)} · 新车进入库存，在线路详情点「＋」派车</small></div><button class="close" onclick="closeModal()">×</button></div>
-<div class="ux-list">${uxTypes().map(t => {
-    const on = S.unlocked.includes(t), T = TYPES[t];
-    return `<div class="ux-product${on ? '' : ' is-locked'}">${transportIcon(t)}<div><b>${T.name}</b><small>${isTrain(t) ? '初始 2 节，最多 8 节' : T.cap + ' 人'} · 票价 ×${T.fare ?? 1}${on ? ' · 库存 ' + S.inventory[t] : ''}</small>${on ? '' : `<small class="ux-lock"><i>未解锁</i>${unlockText(t)}</small>`}</div><button class="${on ? 'primary' : ''}" onclick="purchase('v-${t}')" ${!on || S.points < T.vehicle ? 'disabled' : ''}>¥${T.vehicle}</button></div>`;
-  }).join('')}</div>
+${(() => {
+    // what can be bought now, specs on one line; what is still locked in its own short list: name, condition, price
+    const all = uxTypes(), open = all.filter(t => S.unlocked.includes(t)), shut = all.filter(t => !S.unlocked.includes(t));
+    const spec = t => { const T = TYPES[t]; return (isTrain(t) ? '2–8 节' : T.cap + ' 人') + ' · 票价 ×' + (T.fare ?? 1) + ' · 库存 ' + S.inventory[t]; };
+    let h = '<div class="ux-list">' + open.map(t => { const T = TYPES[t];
+      return `<div class="ux-product">${transportIcon(t)}<div><b>${T.name}</b><small>${spec(t)}</small></div><button class="primary" onclick="purchase('v-${t}')" ${S.points < T.vehicle ? 'disabled' : ''}>¥${T.vehicle}</button></div>`; }).join('') + '</div>';
+    if (shut.length) h += '<div class="ux-locked-title">待解锁</div><div class="ux-locked">' + shut.map(t => { const T = TYPES[t];
+      return `<div class="ux-product is-locked">${transportIcon(t)}<div><b>${T.name}<em>¥${T.vehicle}</em></b><small class="ux-lock">${unlockText(t)}</small></div></div>`; }).join('') + '</div>';
+    return h;
+  })()}
 ${shopTrainCarsHTML()}
 <div class="ux-links"><button onclick="showEngineering()"><span>工程</span><small>桥梁 · 道路升级 · 气象站 · 枢纽 · 检修中心</small><i>›</i></button><button onclick="showFinance()"><span>收支账本</span><small>收入、支出与月底维护</small><i>›</i></button></div>`);
 };
@@ -560,7 +634,7 @@ function uxHandleAt(sx, sy) {
 // Line identity: a short code from the line's name — its number ("3"), with the vehicle type ("巴1", "动1") once a
 // network mixes types and numbers repeat; otherwise the first characters. The same code labels the line's ends on
 // the map (as on a metro map) and its entry in the collapsed tray, so a colour always comes with a name.
-const UX_TYPE_CHAR = { bus: '巴', emu: '动', rail: '铁', air: '航' };
+const UX_TYPE_CHAR = { bus: '巴', emu: '动', rail: '铁', air: '航', ship: '船', ferry: '渡' };
 function uxLineCode(l) {
   const num = l => (String(l.name).match(/\d+/) || [])[0];
   const n = num(l);
@@ -699,15 +773,15 @@ for (const t of ['pointerup', 'pointercancel']) cv.addEventListener(t, e => {
   function update() {
     try {
       const keep = new Set();
-      if (S && !modalOpen && !draft && !bridgeDraft) {
+      if (S && S.lives > 0 && !modalOpen && !draft && !bridgeDraft) {
         const band = fitBand();
         // portrait: the line picker is a bottom sheet too (fitBand already stops at the tray and the details sheet)
         const pk = uxEl('junction-picker'); if (portraitMode && pk && !pk.hidden) { const r = pk.getBoundingClientRect(); if (r.height) band.bottom = Math.min(band.bottom, r.top - 10); }
         // Stay below the notices and the construction-undo pill so a pointer is never covered.
-        for (const sel of ['.top-stack', '.undo-build']) { const e = document.querySelector(sel); if (!e || e.hidden) continue; const r = e.getBoundingClientRect(); if (r.height) band.top = Math.max(band.top, r.bottom + 4); }
+        for (const sel of ['.top-stack']) { const e = document.querySelector(sel); if (!e || e.hidden) continue; const r = e.getBoundingClientRect(); if (r.height) band.top = Math.max(band.top, r.bottom + 4); }
         const cx = W / 2, cy = (band.top + band.bottom) / 2;
         for (const c of realCities()) {
-          const urgent = !c.dormant && c.warning > 0, fresh = c.dormant;
+          const left = uxLifeLeft(c), urgent = !c.dormant && (left !== null || c.warning > 0), fresh = c.dormant;
           if (!urgent && !fresh) continue;
           const p = toScreen(c);
           // A city the player can see (below the header, above the dock — and in portrait above an open sheet) needs no pointer.
@@ -716,7 +790,7 @@ for (const t of ['pointerup', 'pointercancel']) cv.addEventListener(t, e => {
           const dx = p.x - cx, dy = p.y - cy, sx = (W / 2 - 64) / Math.abs(dx || 1e-6), sy = ((band.bottom - band.top) / 2 - 22) / Math.abs(dy || 1e-6), k = Math.min(sx, sy, 1);
           let el = pills.get(c.id);
           if (!el) { el = document.createElement('button'); el.dataset.city = c.id; layer.appendChild(el); pills.set(c.id, el); }
-          const secs = urgent ? Math.ceil(c.warning) : typeof cityOpeningRemaining === 'function' ? cityOpeningRemaining(c) : null;
+          const secs = urgent ? (left ?? Math.ceil(c.warning / Math.max(1, S.speed || 1))) : typeof cityOpeningRemaining === 'function' ? cityOpeningRemaining(c) : null;
           el.className = 'ux-edge-pill' + (urgent ? ' is-urgent' : '');
           el.innerHTML = `<i style="transform:rotate(${Math.atan2(dy, dx)}rad)">➜</i><span>${urgent ? '告急 ' : '新城 '}${escapeHTML(c.name)}</span>${secs !== null ? `<small>${secs}s</small>` : ''}`;
           // Never cover a city that is on screen (a tap meant for it would fly the camera away): slide the pill along
@@ -726,7 +800,7 @@ for (const t of ['pointerup', 'pointercancel']) cv.addEventListener(t, e => {
           // cities on screen and the selected line's ＋ tabs (a pill over a tab would take the tap meant for it)
           const nodes = [...realCities(), ...(typeof uxVisibleHandles === 'function' ? uxVisibleHandles() : [])].map(o => toScreen(o)).filter(q => q.x > 0 && q.x < W && q.y > band.top && q.y < band.bottom);
           // …nor the toast while it shows (a pointer pressed against it reads as one blurred message)
-          const tr = uxEl('toast')?.classList.contains('show') ? uxEl('toast').getBoundingClientRect() : null;
+          const fbx = uxEl('ux-feedback'), tr = !fbx && uxEl('toast')?.classList.contains('show') ? uxEl('toast').getBoundingClientRect() : null;   // the feedback capsule steps around pointers itself
           const covers = (x, y) => nodes.some(q => Math.abs(q.x - x) < halfW + 14 && Math.abs(q.y - y) < halfH + 14) || !!(tr && tr.width && x + halfW > tr.left && x - halfW < tr.right && y + halfH > tr.top && y - halfH < tr.bottom);
           let clear = false;
           for (const off of [0, 40, -40, 80, -80, 120, -120, 160, -160, 200, -200, 240, -240, 280, -280]) {
@@ -742,7 +816,7 @@ for (const t of ['pointerup', 'pointercancel']) cv.addEventListener(t, e => {
       }
       for (const [id, el] of pills) if (!keep.has(id)) { el.remove(); pills.delete(id); }
     } catch {}
-    if (uxEl('toast')?.classList.contains('show')) uxPlaceToast();
+    if (uxEl('toast')?.classList.contains('show') || uxEl('ux-feedback')?.classList.contains('show')) uxPlaceToast();
     setTimeout(update, 150);
   }
   update();
@@ -913,7 +987,17 @@ function uxMarketStocks() { uxMoneyIntent = 3; showFinancialMarket('stocks'); }
 function uxOpenHub(key, i = 0) { haptic(); globalThis[UX_HUBS[key].tabs[i][1]](); }
 function uxHubBar(key, idx, m) {
   const hub = UX_HUBS[key];
-  if (!m || m.hidden === true || m.querySelector('.ux-hub-tabs, .deck128')) return;
+  if (!m || m.hidden === true || m.querySelector('.ux-hub-tabs, .ux-deck-tabs')) return;
+  // the activity deck (web128) has its own full-height layout and header: the tabs go into that header in place of its
+  // two title lines, next to its own × (the shell hid that ×; it is shown again in style.css)
+  const deckHead = m.querySelector('.deck128 .deck-heading128, .deck-heading128');
+  if (deckHead) {
+    const nav = document.createElement('nav'); nav.className = 'ux-deck-tabs'; nav.setAttribute('role', 'tablist');
+    nav.innerHTML = hub.tabs.map(([label], i) => `<button role="tab" aria-selected="${i === idx}" class="${i === idx ? 'on' : ''}" onclick="uxOpenHub('${key}',${i})">${label}</button>`).join('');
+    const titles = deckHead.querySelector(':scope > div'); if (titles) titles.hidden = true;
+    deckHead.insertBefore(nav, deckHead.querySelector('.close'));
+    return;
+  }
   let head = m.querySelector('.modal-head');
   if (!head) { head = document.createElement('div'); head.className = 'modal-head'; head.innerHTML = '<h2></h2><button class="close" onclick="closeModal()">×</button>'; m.prepend(head); }
   uxHeadFirst(m);
@@ -1117,19 +1201,32 @@ function uxGameOver(m) {
   const tiles = document.createElement('div'); tiles.className = 'ux-resume';
   tiles.innerHTML = `<div><small>坚持</small><b>${days} 天</b></div><div><small>送达</small><b>${got ?? 0} 人</b></div><div><small>线路</small><b>${S.lines.length}</b></div><div><small>城市</small><b>${realCities().filter(c => !c.dormant).length}</b></div>`;
   const h = m.querySelector('h1, h2'); (h || m.firstChild).after(tiles);
+  // what ended the run (user 2026-11-18): the last life actually lost, as recorded when it happened (uxLifeLog) — not a
+  // guess from the stations that are crowded now. The secondary button goes to that station.
+  const last = (S.uxLifeLog || []).at(-1), lc = last && S.cities[last.id];
+  if (last) {
+    const why = document.createElement('p'); why.className = 'ux-lastlife';
+    why.innerHTML = '<b>最后一条命</b>' + escapeHTML(last.name.split('·')[0]) + ' 持续满员<small>第 ' + (last.day + 1) + ' 天 · 当时候车 ' + last.n + ' / 容量 ' + last.cap + '</small>';
+    tiles.before(why);
+    const look = [...m.querySelectorAll('button')].find(b => /查看交通网络/.test(b.textContent));
+    if (look && lc && !lc.removed) { look.textContent = '查看失守车站'; look.setAttribute('onclick', 'closeModal();uxFocusCity(' + last.id + ')'); }
+  }
   for (const p of m.querySelectorAll('p')) if (/(维持|坚持)了/.test(p.textContent)) p.remove();
 }
 /* ---------- active city activity: status, progress, stakes ---------- */
 function uxActiveActivity(m) {
   const st = typeof activityState === 'function' ? activityState() : null, e = st?.active; if (!e || m.querySelector('.ux-act')) return;
-  const card = [...m.querySelectorAll('section.infra-card')].find(x => /定位举办城市/.test(x.textContent)); if (!card) return;
+  // upstream's card ends with a locate button: 定位举办城市 (events.js) or, since regional tasks, 定位任务城市 — kept as is
+  const card = [...m.querySelectorAll('section.infra-card')].find(x => /定位(举办|任务)城市/.test(x.textContent)); if (!card) return;
+  const go = [...card.querySelectorAll('button')].find(b => /定位(举办|任务)城市/.test(b.textContent)), goCall = go?.getAttribute('onclick') || `closeModal();openCity(${e.host})`, goTask = /任务城市/.test(go?.textContent || '');
+  const scope = typeof regionalTaskLabel === 'function' ? (() => { try { return regionalTaskLabel(e); } catch { return ''; } })() : '';
   const prep = S.day < e.start, days = (prep ? e.start - S.day : Math.max(0, e.end - S.day)).toFixed(1);
   const pct = Math.min(100, e.delivered / Math.max(1, e.goal) * 100);
   const box = document.createElement('section'); box.className = 'ux-act';
-  box.innerHTML = `<div class="ux-act-head"><span class="ux-act-stars">${'★'.repeat(e.star)}</span><b>${escapeHTML(e.title)}</b><small>${escapeHTML(S.cities[e.host]?.name || '')}</small><em class="${prep ? 'is-prep' : ''}">${prep ? '准备中 · 还需 ' + days + ' 天' : '进行中 · 剩 ' + days + ' 天'}</em></div>
-<div class="ux-act-progress"><span class="ux-bar"><i style="width:${pct}%"></i></span><span><b>${e.delivered}</b> / ${e.goal} 已送达<small>已出发 ${e.spawned}/${e.total} · 候车合格 ${e.good}/${e.delivered}${e.goodRatio ? '（需 80%）' : ''}</small></span></div>
+  box.innerHTML = `<div class="ux-act-head"><span class="ux-act-stars">${'★'.repeat(e.star)}</span><b>${escapeHTML(e.title)}</b><small>${escapeHTML([S.cities[e.host]?.name, scope].filter(Boolean).join(' · '))}</small><em class="${prep ? 'is-prep' : ''}">${prep ? '准备中 · 还需 ' + days + ' 天' : '进行中 · 剩 ' + days + ' 天'}</em></div>
+<div class="ux-act-progress"><span class="ux-bar"><i style="width:${pct}%"></i></span><span><b>${e.delivered}</b> / ${e.goal} 已送达<small>已出发 ${e.spawned}/${e.total} · 候车合格 ${e.good}/${e.delivered}${e.goodRatio ? '（需 ' + Math.round(e.goodRatio * 100) + '%）' : ''}</small></span></div>
 <div class="ux-act-stakes"><div class="ok"><small>完成</small><b>${typeof activityRewardText === 'function' ? activityRewardText(e) : ''}</b></div><div class="bad"><small>未完成</small><b>最高 ¥${e.fine}${e.scoreLoss ? ' · 评分 −' + e.scoreLoss : ''}</b></div></div>
-<button class="ux-act-go" onclick="closeModal();openCity(${e.host})">在地图上定位举办城市</button>`;
+<button class="ux-act-go" onclick="${escapeHTML(goCall)}">在地图上定位${goTask ? '任务' : '举办'}城市</button>`;
   card.replaceWith(box);
 }
 // Activity page footer: an unpaid fine is a warning; with nothing owed only the rule remains, as a footnote.
@@ -1174,10 +1271,36 @@ function uxMarkColor() {
 }
 // Line picker at a shared station: the city entry says how loaded the station is and comes first; drawing a line
 // out of it is a secondary chip on each row.
+// Line picker at a shared station (user 2026-11-16: 页面大胆重构): the lines through the station grouped by mode, like
+// the tray — the mode named once, each line a compact cell (colour, number, stops) with its ↗ edit button beside it.
+// Upstream's own rows are moved into the groups as they are (handlers, data-junction-line for the drag and the
+// tutorial, the chosen highlight); only their text is shortened.
+function uxJunctionGroups(id) {
+  const el = uxEl('junction-picker'), list = el?.querySelector('.junction-lines'); if (!list || list.dataset.ux) return;
+  list.dataset.ux = '1';
+  const head = el.querySelector('.junction-heading small'), lines = typeof cityLines === 'function' ? cityLines(id) : [];
+  if (head) head.textContent = lines.length + ' 条线路经过 · 点线路查看，↗ 改线';
+  const rows = [...list.querySelectorAll(':scope > .junction-line')];
+  const byId = new Map(rows.map(r => [+r.querySelector('[data-junction-line]')?.dataset.junctionLine, r]));
+  const frag = document.createDocumentFragment();
+  for (const [t, name] of UX_MODES) {
+    const ls = lines.filter(l => l.type === t).sort((a, b) => (+uxLineLabel(a) || 1e9) - (+uxLineLabel(b) || 1e9) || a.id - b.id); if (!ls.length) continue;
+    const g = document.createElement('section'); g.className = 'ux-jg'; g.dataset.mode = t;
+    g.innerHTML = '<div class="ux-jg-head"><i class="ux-tmark ' + t + '"></i><b>' + name + '</b><small>' + ls.length + '</small></div><div class="ux-jg-cells"></div>';
+    const cells = g.querySelector('.ux-jg-cells');
+    for (const l of ls) { const r = byId.get(l.id); if (!r) continue; r.style.setProperty('--c', l.color);
+      const sp = r.querySelector('button:first-child span'); if (sp) sp.innerHTML = '<b>' + escapeHTML(uxLineLabel(l)) + '</b><small>' + l.stops.filter(s => S.cities[s]?.kind !== 'bridgehead').length + '站</small>';
+      const go = r.querySelector('.junction-drag'); if (go) go.textContent = '↗';
+      cells.appendChild(r); }
+    frag.appendChild(g);
+  }
+  for (const r of list.querySelectorAll(':scope > .junction-line')) frag.appendChild(r);   // anything left (no mode match)
+  list.appendChild(frag);
+}
 function uxJunctionCity(id) {
   const c = S.cities[id], b = uxEl('junction-picker')?.querySelector('.junction-city-task'); if (!c || !b || typeof capacity !== 'function') return;
   const n = c.q.filter(p => !p.cardId && !p.eventId).length, cap = capacity(c), cls = n >= cap ? 'is-over' : n >= cap * .8 ? 'is-near' : '';
-  b.innerHTML = '<span><b>城市详情</b><small>任务、设施与候车明细</small></span><em class="' + cls + '">候车 ' + n + '/' + cap + '</em><i>›</i>';
+  b.innerHTML = '<span><b>城市详情</b></span><em class="' + cls + '">候车 ' + n + '/' + cap + '</em><i>›</i>';
 }
 let uxLineEdit = null;   // { id, preview } while the line settings sheet is open; preview = picked, not yet saved colour
 function uxWrapHubs() {
@@ -1207,7 +1330,25 @@ function uxWrapHubs() {
     const secs = [...m.querySelectorAll('.ux-eng > .ux-eng-sec')], damage = card.closest('.ux-eng-sec'), calm = /暂无受损路段/.test(card.textContent);
     // with nothing damaged, line upgrades (something to do) come before the quiet damage/earthquake status
     if (calm && secs.length > 1 && secs.at(-1) !== damage) secs.at(-1).after(damage);
+    // …and says it in one row: 路网状态 — 地震监测 · 暂无震情 · 无受损路段 [自动聚焦]
+    if (calm) { const tt = damage.querySelector('.ux-eng-title'); if (tt) tt.textContent = '路网状态';
+      for (const p of damage.querySelectorAll('p')) if (/暂无受损路段/.test(p.textContent)) p.remove();
+      const sm = damage.querySelector('.quake-summary b small'); if (sm && !/路段/.test(sm.textContent)) sm.textContent = '无震情 · 路段完好'; }
     damage.after(sec);
+  }));
+  // 9b. finance pages (理财 / 股票): the pause note, the cash / return figures and the 收益记录 link were three rows above
+  // the products; they become one strip — 现金 · 收益率 · [收益记录] — with the pause note as its small print
+  uxAfter('showFinancialMarket', m => Promise.resolve().then(() => {   // after the hub bar has turned the market tabs into links
+    const fm = m.querySelector('.financial-market'), hl = fm?.querySelector(':scope > .market-headline'); if (!hl || hl.classList.contains('ux-strip')) return;
+    hl.classList.add('ux-strip');
+    // a trade re-renders the page and restores the scroll position on the full layout: keep it through this change
+    // (scroll anchoring would otherwise move the page up by the rows removed here)
+    const sc = m.scrollTop;
+    for (const s of hl.querySelectorAll(':scope > div > small')) s.textContent = s.textContent.replace('可用现金', '现金').replace('累计投资收益率', '累计收益');
+    const note = fm.querySelector(':scope > .market-pause-note'), links = fm.querySelector(':scope > .ux-help-links'), rec = links?.querySelector('button[onclick*="portfolio"]');
+    if (rec) { hl.appendChild(rec); if (!links.querySelector('button')) links.remove(); }
+    if (note) { note.classList.add('ux-strip-note'); hl.after(note); }
+    if (m.scrollTop !== sc) m.scrollTop = sc;
   }));
   // 10. stocks before the first settled trading day: an explained empty chart instead of a blank one with controls
   uxAfter('showFinancialMarket', m => {
@@ -1274,7 +1415,7 @@ function uxWrapHubs() {
   if (typeof showJunction === 'function') { const sj = showJunction; showJunction = function (...a) {
     showJunction.openedAt = performance.now();
     const r = sj.apply(this, a);
-    uxJunctionCity(a[0]);
+    uxJunctionCity(a[0]); uxJunctionGroups(a[0]);
     if (portraitMode) { const el = uxEl('junction-picker'); if (el?.style) el.style.maxHeight = '';
       // opening the picker hides the details sheet, which may start a 280ms view restore: frame once that settles
       setTimeout(() => { if (selected?.type === 'junction' && typeof requestAnimationFrame === 'function') requestAnimationFrame(uxFrameSelection); }, 320); }
@@ -1335,13 +1476,7 @@ function uxWrapHubs() {
 const UX_TRAY_KEY = 'transit-ux-tray-collapsed';
 function uxTray() {
   const p = uxEl('routes'), head = p?.querySelector?.('.panel-heading'); if (!head || !S) return;
-  let sw = head.querySelector('.ux-swatches');
-  if (!sw) { sw = document.createElement('span'); sw.className = 'ux-swatches'; head.insertBefore(sw, head.children[1] || null); }
-  const key = S.lines.map(l => l.id + l.color + l.name + (selected?.type === 'line' && selected.id === l.id ? '*' : '')).join();
-  if (sw.dataset.key !== key) {
-    sw.dataset.key = key;
-    sw.innerHTML = S.lines.map(l => `<button style="--c:${l.color}" class="${selected?.type === 'line' && selected.id === l.id ? 'on' : ''}" onclick="selectLine(${l.id})" aria-label="${escapeHTML(l.name)}" title="${escapeHTML(l.name)}">${escapeHTML(uxLineCode(l))}</button>`).join('');
-  }
+  head.querySelector('.ux-swatches')?.remove();   // the per-line code row is replaced by the per-mode pills (uxTrayGroups)
   // swatches speak the map's language: bus a solid line, 动车 / 高铁 a double track (heavier for 高铁), air a dash
   for (const row of p.querySelectorAll('.route-row[data-line]')) {
     const l = S.lines.find(x => x.id === +row.dataset.line), sw = row.querySelector('.swatch'); if (!l || !sw) continue;
@@ -1353,9 +1488,50 @@ function uxTray() {
   const col = uxEl('collapse'), shut = p.classList.contains('collapsed');
   if (col) { const t = shut ? '⌃' : '⌄'; if (col.textContent !== t) col.textContent = t; col.setAttribute('aria-label', shut ? '展开线路列表' : '收起线路列表'); }
   const cnt = uxEl('routecount'); if (cnt && shut) { const t = S.lines.length + ' 条'; if (cnt.textContent !== t) cnt.textContent = t; }
+  uxTrayGroups(p, head, shut);
+  // short landscape: the shell's tray offset assumes the portrait dock; keep the tray above the dock that is really there
+  // (the shell keeps portraitMode on in landscape too, and its offset is !important)
+  const dk = document.querySelector('footer .dock')?.getBoundingClientRect?.(), want = innerWidth > innerHeight && innerHeight <= 500 && dk && dk.height ? Math.ceil(innerHeight - dk.top + 8) + 'px' : '';
+  if (p.style.getPropertyValue?.('bottom') !== want) want ? p.style.setProperty('bottom', want, 'important') : p.style.removeProperty?.('bottom');
   const ov = uxEl('overview'), foot = p.querySelector('.route-foot');
   if (ov && portraitMode && ov.parentElement !== head) head.insertBefore(ov, uxEl('route-new130') || uxEl('collapse'));
   else if (ov && !portraitMode && foot && ov.parentElement !== foot) foot.appendChild(ov);
+}
+// Lines grouped by mode (user 2026-11-16: 同种交通线归并). Expanded: one group per mode — the mode named once (大巴 · 14),
+// its lines as compact chips by number in their colour (a renamed line keeps its own name). Collapsed: one row, a pill
+// per mode with its count and colour dots; tapping a pill opens the tray at that mode. Upstream's list stays in the
+// page (hidden) — the chips select lines with the same call it uses.
+// v1.6 sea modes (third map): 小轮船 / 大轮渡 lines are grouped like the land modes
+const UX_MODES = [['bus', '大巴'], ['emu', '动车'], ['rail', '高铁'], ['ship', '轮船'], ['ferry', '轮渡'], ['air', '航空']];
+function uxLineLabel(l) {
+  const m = String(l.name).match(/^(?:大巴|公交|动车|高铁|飞机|航空|航线|小轮船|大轮渡|轮船|轮渡|海运)?\s*(\d+)\s*(?:号)?线?$/);
+  return m ? m[1] : String(l.name).replace(/线$/, '').slice(0, 4);
+}
+let uxTrayFocus = null;   // mode the collapsed pill asked for
+function uxTrayGroups(p, head, shut) {
+  let g = p.querySelector(':scope > .ux-tgroups'), sum = head.querySelector('.ux-tsum');
+  if (!g) { g = document.createElement('div'); g.className = 'ux-tgroups'; head.after(g); }
+  if (!sum) { sum = document.createElement('div'); sum.className = 'ux-tsum'; head.insertBefore(sum, head.firstChild); }
+  const sel = selected?.type === 'line' ? selected.id : null, live = S.lines.filter(l => !l.retiring || true);
+  const groups = UX_MODES.map(([t, name]) => ({ t, name, lines: live.filter(l => l.type === t).sort((a, b) => (+uxLineLabel(a) || 1e9) - (+uxLineLabel(b) || 1e9) || a.id - b.id) })).filter(x => x.lines.length);
+  const key = shut + '|' + sel + '|' + uxTrayFocus + '|' + groups.map(x => x.t + ':' + x.lines.map(l => l.id + l.color + l.name + (l.retiring ? 'r' : '')).join(',')).join(';');
+  if (g.dataset.key === key) return; g.dataset.key = key;
+  if (!groups.length) {   // no line yet: say what to do instead of an empty box
+    sum.innerHTML = '<span class="ux-tempty">还没有线路 · 从一座城拖到另一座</span>'; g.innerHTML = '<p class="ux-tempty">还没有线路 · 从一座城拖到另一座，看报价后建设</p>'; return;
+  }
+  // one row whatever the network: the more modes, the shorter each pill (full name + 8 dots → 简称 + 4 → 简称 + count)
+  const nd = groups.length === 1 ? 8 : groups.length === 2 ? 4 : 0, shortName = groups.length > 1;
+  sum.innerHTML = groups.map(x => '<button type="button" class="ux-tpill" data-mode="' + x.t + '" aria-label="' + x.name + ' ' + x.lines.length + ' 条，展开">' + (groups.length < 3 ? '<i class="ux-tmark ' + x.t + '"></i>' : '') + '<b>' + (shortName ? UX_TYPE_CHAR[x.t] || x.name : x.name) + '</b><small>' + x.lines.length + '</small>' + (nd ? '<span class="ux-tdots">'
+    + x.lines.slice(0, nd).map(l => '<i style="--c:' + l.color + '"></i>').join('') + (x.lines.length > nd ? '<em>+' + (x.lines.length - nd) + '</em>' : '') + '</span>' : '') + '</button>').join('');
+  g.innerHTML = groups.map(x => '<section class="ux-tg' + (uxTrayFocus === x.t ? ' is-focus' : '') + '" data-mode="' + x.t + '"><div class="ux-tg-head"><i class="ux-tmark ' + x.t + '"></i><b>' + x.name + '</b><small>' + x.lines.length + '</small></div><div class="ux-tg-lines">'
+    + x.lines.map(l => '<button type="button" class="ux-tline' + (l.id === sel ? ' on' : '') + (l.retiring ? ' is-retiring' : '') + '" style="--c:' + l.color + '" data-line="' + l.id + '" title="' + escapeHTML(l.name) + '" aria-label="' + escapeHTML(l.name) + '"><i></i>' + escapeHTML(uxLineLabel(l)) + '</button>').join('') + '</div></section>').join('');
+  if (!g.uxWired) {
+    g.uxWired = true;
+    g.addEventListener('click', e => { const b = e.target.closest('[data-line]'); if (b) { haptic(); selectLine(+b.dataset.line); } });
+    sum.addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (!b) return; e.stopPropagation(); haptic(); uxTrayFocus = b.dataset.mode;
+      if (p.classList.contains('collapsed')) uxEl('collapse')?.click(); else updateUI();
+      setTimeout(() => { g.querySelector('.ux-tg[data-mode="' + uxTrayFocus + '"]')?.scrollIntoView?.({ block: 'nearest' }); }, 60); setTimeout(() => { uxTrayFocus = null; updateUI(); }, 1600); });
+  }
 }
 function uxTrayInit() {
   const btn = uxEl('collapse'), p = uxEl('routes'); if (!btn || !p) return;
@@ -1388,6 +1564,15 @@ function uxNoticeKey(t) {
   }
   return null;
 }
+// The top notice gets a category icon on its left, the same round slot as the undo pill and the edge pointers. Only an
+// attribute is set (other layers read the notice text); a leading ★ / ♪ in the text is hidden since the icon says it.
+const UX_NOTICE_KINDS = [['activity', /^★|活动|邀请/], ['concert', /^♪|音乐|演出/], ['weather', /雨|雾|台风|天气/], ['damage', /受损|断开|断线|待拆/], ['works', /施工/], ['opening', /开放|新城|待接入/]];
+function uxNoticeIcon() {
+  const n = uxEl('notice'), wrap = n?.closest?.('.notice-wrap'); if (!n || !wrap || typeof MutationObserver !== 'function') return;
+  const apply = () => { const t = n.textContent || '', k = t ? (UX_NOTICE_KINDS.find(([, re]) => re.test(t))?.[0] || 'info') : '', sym = /^[★♪]/.test(t) ? '1' : '';
+    if (wrap.dataset.kind !== k) wrap.dataset.kind = k; if ((wrap.dataset.sym || '') !== sym) wrap.dataset.sym = sym; };
+  new MutationObserver(apply).observe(n, { childList: true, characterData: true, subtree: true }); apply();
+}
 function uxNoticeDismiss() {
   const btn = uxEl('notice-close'), n = uxEl('notice'); if (!btn || !n) return;
   let closed = null; const up = btn.onclick;
@@ -1406,12 +1591,13 @@ function uxNoticeDismiss() {
 }
 function uxEndedState() {
   const b = uxEl('pause'); if (!b) return;
-  const tap = b.onclick;
+  const tap = b.onclick, playLabel = b.getAttribute?.('aria-label') || '暂停或继续';
   b.onclick = function (e) { if (S && S.lives <= 0) { if (typeof gameover === 'function') gameover(); return; } return tap?.call(this, e); };
   const ui = updateUI; updateUI = function (...a) {
     const r = ui.apply(this, a), ended = !!S && S.lives <= 0;
     if (b.classList?.contains('is-ended') !== ended) b.classList?.toggle('is-ended', ended);
     if (ended) { if (b.textContent !== '结算') b.textContent = '结算'; b.setAttribute?.('aria-label', '本局已结束，查看结算'); }
+    else if (b.getAttribute?.('aria-label') === '本局已结束，查看结算') b.setAttribute('aria-label', playLabel);
     return r;
   };
 }
@@ -1450,11 +1636,224 @@ function uxAchievements() {
   showAchievements14.ux = true;
   const b = uxEl('achievements-entry14'); if (b) b.onclick = () => showAchievements14();
 }
+// v1.5 save-and-exit button (update123.js): an exit glyph (door, arrow out); its label and action stay upstream's
+function uxExitIcon() {
+  const b = uxEl('game-exit'); if (!b || b.dataset.ux) return;
+  b.dataset.ux = '1'; b.title = b.getAttribute('aria-label') || '保存与退出';
+  b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4"/><path d="M14 8l4 4-4 4M18 12H9"/></svg>';
+}
+// City-activity invitations (抽卡) are drawn mid-game: for every possible host town, every other town's full transfer
+// route is planned (activitySources → plan → serviceTravelTime → edgeTime), with the same edges timed again and
+// again. Late in a match this froze the game for seconds (tens of seconds on Android WebView) the moment an
+// invitation fell due. Upstream already memoises routes and travel times inside a routing batch (performance.js,
+// used for vehicle arrivals); the draw is one synchronous computation on an unchanging state, so it runs inside its
+// own batch too. Same routes, same results — computed once.
+function uxBatchOffers() {
+  if (typeof generateActivityOffers !== 'function' || generateActivityOffers.uxBatch || typeof routingBatch === 'undefined') return;
+  const gen = generateActivityOffers;
+  generateActivityOffers = function (...a) {
+    if (routingBatch) return gen.apply(this, a);   // already inside one
+    routingBatch = { routes: new Map(), travel: new Map() };
+    try { return gen.apply(this, a); } finally { routingBatch = null; }
+  };
+  generateActivityOffers.uxBatch = true;
+}
+// Late networks: touches land on lines and stations almost everywhere, so a drag used to grab whatever was under the
+// finger (user 2026-11-15, 拉线打架). Now a drag edits a line only when that line is the one selected:
+// - from a station shared by several lines: a new line starts there (it used to pop the line picker, so no new line
+//   could be drawn from a busy station; a tap still opens the picker). A station on one line keeps upstream's drag —
+//   extend from an end, pull a stop off — which the v1.5.9 tutorial teaches;
+// - from a stretch of line: the selected line is pulled (elastic); any other line under the finger is just map → pan.
+// Upstream's edit mode (a line chosen in the picker: draft.tapEdit132) and pinch are untouched.
+function uxGestureRules() {
+  if (typeof movePointer !== 'function' || movePointer.uxRules) return;
+  const mv = movePointer;
+  movePointer = function (e) {
+    const g = gesture;
+    // the tutorial (update123–129, tutorial159) teaches dragging an unselected road and stop: keep that while it runs
+    const tutorial = S?.tutorial123?.stage && S.tutorial123.stage !== 'done';
+    if (g && g.kind === 'tap' && !g.uxRuled && !tutorial && !draft && pointers.size === 1 && Math.hypot(e.clientX - g.start.x, e.clientY - g.start.y) > 14) {
+      g.uxRuled = true;
+      const sel = selected?.type === 'line' ? selected.id : selected?.type === 'stop' ? selected.line : selected?.type === 'junction' ? selected.preferred : null;
+      if (g.c) { if (g.ambiguousLines && !g.cityLine) g.ambiguousLines = null; }   // shared station: a new line (single-line stations keep upstream's extend / remove-stop drag, taught by tutorial159)
+      else if (g.rh && g.rh.l?.id !== sel) g.rh = null;
+    }
+    return mv.call(this, e);
+  };
+  movePointer.uxRules = true;
+}
+// While drawing, a station attaches at once when the finger passes its centre (v1.5.3), so a quick stroke across a
+// late network picked up every town on the way. A fast-moving finger (> ~350 px/s over the last 100 ms) now has to
+// pause on a town (the 90 ms dwell upstream already uses for the wider halo); slow passes and pauses attach as before.
+let uxStrokeSpeed = 0, uxStrokeTrail = [];
+function uxSwipeAttach() {
+  if (typeof addDraftCity !== 'function' || addDraftCity.uxSwipe || typeof cv === 'undefined') return;
+  cv.addEventListener('pointermove', e => {
+    const t = e.timeStamp || performance.now(); uxStrokeTrail.push({ x: e.clientX, y: e.clientY, t });
+    while (uxStrokeTrail.length > 2 && t - uxStrokeTrail[0].t > 100) uxStrokeTrail.shift();
+    const o = uxStrokeTrail[0]; uxStrokeSpeed = t > o.t ? Math.hypot(e.clientX - o.x, e.clientY - o.y) / (t - o.t) : 0;
+  }, { capture: true, passive: true });
+  cv.addEventListener('pointerdown', e => { uxStrokeSpeed = 0; uxStrokeTrail = [{ x: e.clientX, y: e.clientY, t: e.timeStamp || performance.now() }]; }, { capture: true, passive: true });
+  const add = addDraftCity;
+  addDraftCity = function (c, force = false, ...rest) {
+    if (!(S?.tutorial123?.stage && S.tutorial123.stage !== 'done') && !(typeof isMarine16 === 'function' && isMarine16(draft?.type)) && !force && gesture?.kind === 'draft' && draft?.pointer && uxStrokeSpeed > .35 && c?.kind !== 'bridgehead') {
+      const p = draft.pointer; draft.pointer = null;   // hides the centre test of map-revision153 → the dwell guard decides
+      try { return add.call(this, c, force, ...rest); } finally { if (draft) draft.pointer = p; }
+    }
+    return add.call(this, c, force, ...rest);
+  };
+  addDraftCity.uxSwipe = true;
+}
+// While a route is drawn or re-routed, other lines' bridge and tunnel decks (drawn in full colour) are toned down with
+// the lines themselves; building a bridge keeps them as they are.
+function uxDraftInfra() {
+  // tunnel mouths and bridge decks are drawn per line segment (drawTunnelSpans) in full colour: they fade with their line
+  if (typeof drawTunnelSpans === 'function' && !drawTunnelSpans.uxFade) {
+    const ts = drawTunnelSpans;
+    drawTunnelSpans = function (a, b, l, ...r) {
+      if (ctx.canvas !== cv || !l || l === draft) return ts.call(this, a, b, l, ...r);
+      const f = draft ? (draft.original ?? -1) : uxHandleFocus(), k = f !== null && f !== undefined ? (l.id === f ? 1 : .25) : (typeof LINE_ALPHA === 'function' ? LINE_ALPHA(l, null) : 1);
+      if (k >= 1) return ts.call(this, a, b, l, ...r);
+      // upstream sets globalAlpha = 1 inside: for this call, whatever it sets is scaled by the line's fade
+      const d = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(ctx), 'globalAlpha');
+      if (!d?.set) return ts.call(this, a, b, l, ...r);
+      Object.defineProperty(ctx, 'globalAlpha', { configurable: true, get() { return d.get.call(this); }, set(v) { d.set.call(this, v * k); } });
+      ctx.save(); ctx.globalAlpha = 1;
+      try { return ts.call(this, a, b, l, ...r); } finally { ctx.restore(); delete ctx.globalAlpha; }
+    };
+    drawTunnelSpans.uxFade = true;
+  }
+  if (typeof drawInfrastructure !== 'function' || drawInfrastructure.uxDraft) return;
+  const di = drawInfrastructure;
+  drawInfrastructure = function (...a) {
+    if (!draft || bridgeDraft || ctx.canvas !== cv) return di.apply(this, a);
+    ctx.save(); ctx.globalAlpha *= .4; try { return di.apply(this, a); } finally { ctx.restore(); }
+  };
+  drawInfrastructure.uxDraft = true;
+}
+// Portrait header in one row (user 2026-11-16: the second row held four buttons on the right and nothing on the left).
+// Help, sound settings and save-and-exit are occasional: they move into one menu (☰) at the left; date, funds/lives
+// and play/speed share the single row. The original buttons stay in the page and the menu clicks them, so their
+// behaviour (and upstream's handlers) is unchanged. Landscape and desktop keep the original header.
+function uxHeaderMenu() {
+  const head = document.querySelector('header'); if (!head || uxEl('ux-menu')) return;
+  const btn = document.createElement('button'); btn.id = 'ux-menu'; btn.type = 'button'; btn.className = 'ctl'; btn.setAttribute('aria-label', '菜单'); btn.setAttribute('aria-expanded', 'false');
+  btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/></svg>';
+  const pop = document.createElement('div'); pop.id = 'ux-menu-pop'; pop.hidden = true; pop.setAttribute('role', 'menu');
+  const items = [['help', '操作说明', () => uxEl('help')], ['sound', '声音设置', () => document.querySelector('.effects-button156')], ['exit', '保存并退出', () => uxEl('game-exit')]];
+  pop.innerHTML = items.map(([k, t]) => '<button type="button" role="menuitem" data-k="' + k + '">' + t + '</button>').join('');
+  const close = () => { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
+  btn.onclick = e => { e.stopPropagation(); pop.hidden = !pop.hidden; btn.setAttribute('aria-expanded', String(!pop.hidden)); haptic(); };
+  pop.onclick = e => { const b = e.target.closest('[data-k]'); if (!b) return; close(); items.find(i => i[0] === b.dataset.k)?.[2]()?.click(); };
+  document.addEventListener('pointerdown', e => { if (!pop.hidden && !pop.contains(e.target) && e.target !== btn && !btn.contains(e.target)) close(); }, true);
+  head.prepend(btn); document.body.appendChild(pop);
+}
+// Feedback in one place (user 2026-11-16: 撤回条、反馈提示散落在地图上). The momentary message (toast) and the
+// construction undo share one capsule above the bottom sheet: "线路已应用 · 支出 ¥6800 | ↶ 撤回 19秒" while both show,
+// then "↶ 撤回建线 · 19秒 · 全退 ¥6800" alone until the undo window closes. Both elements keep their ids, text and
+// handlers (upstream writes them); the capsule only holds and places them (uxPlaceToast).
+function uxFeedbackBox() {
+  const t = uxEl('toast'), u = uxEl('undo-build'); if (!t || !u || uxEl('ux-feedback') || !t.parentNode || typeof MutationObserver !== 'function') return;
+  const fb = document.createElement('div'); fb.id = 'ux-feedback';
+  t.parentNode.insertBefore(fb, t); fb.append(t, u);
+  const sync = () => {
+    const msg = t.classList.contains('show'), undo = !u.hidden, on = msg || undo;
+    const short = '撤回 ' + ((u.textContent || '').match(/(\d+)\s*秒/)?.[1] || '') + '秒';
+    if (!msg) fb.uxText = null;   // a new message (or none) picks its place afresh
+    if (u.dataset.short !== short) u.dataset.short = short;
+    fb.classList.toggle('has-msg', msg); fb.classList.toggle('has-undo', undo);
+    if (fb.classList.contains('show') !== on) fb.classList.toggle('show', on);
+    if (on) uxPlaceToast();
+  };
+  try {
+    new MutationObserver(sync).observe(t, { attributes: true, attributeFilter: ['class'] });
+    new MutationObserver(sync).observe(u, { attributes: true, attributeFilter: ['hidden'], childList: true, characterData: true, subtree: true });
+  } catch { t.parentNode === fb && fb.before(t); u.parentNode === fb && fb.before(u); fb.remove(); return; }   // no observers: leave both as they were
+  sync();
+}
+// Facility notices (revision130 "新设施可以建设了") wait until the player has built a first line (or day 3): the weather
+// station and the hub are available from the start, so they popped up over the map in the first second of every new
+// game — before the player had seen the towns. The hub's unread dot is set as before; only the popup waits.
+function uxNoticeTiming() {
+  if (typeof showNotice130 !== 'function' || showNotice130.ux) return;   // only this popup: activity offers keep their own timing
+  const sn = showNotice130;
+  showNotice130 = function (...a) { if (!S || (selected && !uxEl('details')?.hidden) || (!S.lines?.length && S.day < 3)) return; return sn.apply(this, a); };
+  showNotice130.ux = true;
+}
+// v1.6 vehicle trading (release16 appends 「车辆买卖」 to the shop): one row per type even with nothing in stock, plus
+// one 回收 row per running vehicle — a long list of grey buttons in a new game and dozens of rows late. Stock rows are
+// kept only for types in stock (or one quiet line); running vehicles fold away under 「运行中车辆 N 辆 · 回收」 (the line
+// sheet's − already recalls one by one). Rows, buttons and handlers are upstream's, only regrouped.
+function uxFleetSale() {
+  if (typeof shop !== 'function' || shop.uxSale) return;
+  const sh = shop;
+  shop = function (...a) {
+    const r = sh.apply(this, a), sec = uxEl('modal-content')?.querySelector('.fleet-sale16'); if (!sec || sec.dataset.ux) return r;
+    sec.dataset.ux = '1';
+    const rows = [...sec.querySelectorAll(':scope > .quote-row')], stock = [], run = [];
+    for (const row of rows) (/#\d+/.test(row.querySelector('span')?.textContent || '') ? run : stock).push(row);
+    for (const row of stock) if (row.querySelector('button')?.disabled) row.remove();
+    if (!stock.some(r => r.isConnected)) { const p = document.createElement('p'); p.className = 'ux-sale-empty'; p.textContent = '库存里没有车辆可出售'; (run[0] || null) ? run[0].before(p) : sec.appendChild(p); }
+    if (run.length) { const d = document.createElement('details'); d.className = 'ux-rules ux-sale-run'; d.innerHTML = '<summary>运行中车辆 ' + run.length + ' 辆 · 回收</summary>'; run[0].before(d); run.forEach(x => d.appendChild(x)); }
+    return r;
+  };
+  shop.uxSale = true;
+}
+// Life-loss record: which station cost each life, with its queue at that moment (kept with the game, last 5)
+function uxLifeLog() {
+  if (typeof updateCongestion !== 'function' || updateCongestion.uxLog) return;
+  const uc = updateCongestion;
+  updateCongestion = function (c, ...a) {
+    if (S.lives <= 0) return;
+    const before = S.lives, n = c?.q ? c.q.filter(p => !p.cardId && !p.eventId).length : 0, cap = typeof capacity === 'function' && c ? capacity(c) : 0;
+    const r = uc.call(this, c, ...a);
+    if (S.lives < before && c) { (S.uxLifeLog ||= []).push({ id: c.id, name: c.name, day: Math.floor(S.day), n, cap }); if (S.uxLifeLog.length > 5) S.uxLifeLog.shift(); }
+    return r;
+  };
+  updateCongestion.uxLog = true;
+  // a finished run is looked back at: invitations and other notices no longer ask for anything
+  const ui = updateUI; updateUI = function (...a) {
+    const r = ui.apply(this, a);
+    if (S && S.lives <= 0) { const n = uxEl('notice'); if (n && n.textContent) n.textContent = ''; }
+    return r;
+  };
+}
+// Harbours (v1.6 双洋大陆; user 2026-11-18): the map's own facility was a button added by marine16 at the very end of the
+// city sheet, below everything — on a 360px phone the player had to open the sheet fully and scroll to find it. For a
+// city that can have a harbour it now leads the 设施 strip: 建港口 ¥1500 → 本城港口 · 再建一座可开航 (only one harbour
+// on the map: nothing to sail to yet) → 本城港口 · 开航线 (starts a sea route from here). Building and routing use
+// upstream's buildHarbor16 / beginHarborRoute164; the bottom row it replaces is removed.
+function uxHarborChip() {
+  if (typeof showDetails !== 'function' || showDetails.uxHarbor) return;
+  const sd = showDetails;
+  showDetails = function (...a) {
+    const r = sd.apply(this, a);
+    try {
+      const el = uxEl('details'), row = el?.querySelector(':scope > .harbor16'), c = selected?.type === 'city' ? S.cities[selected.id] : null;
+      if (!row || !c || typeof isOcean16 !== 'function' || !isOcean16()) return r;
+      row.remove(); el.querySelector(':scope > .harbor-connect164')?.remove();
+      if (S.lives <= 0 && !c.harbor) { el.querySelector('.ux-harbor')?.remove(); return r; }
+      let strip = el.querySelector(':scope > .ux-fac-strip');
+      if (!strip) { strip = document.createElement('div'); strip.className = 'ux-fac-strip'; strip.innerHTML = '<span>设施</span>'; (el.querySelector(':scope > .ux-load') || el.querySelector(':scope > .detail-sub'))?.after(strip); }
+      strip.querySelector('.ux-harbor')?.remove();
+      const ports = realCities().filter(x => x.harbor && !x.dormant).length, b = document.createElement('button'); b.type = 'button'; b.className = 'ux-harbor';
+      if (S.lives <= 0) { b.textContent = '⚓ 本城港口 · 已建成'; b.classList.add('is-note'); b.disabled = true; }
+      else if (!c.harbor) { b.innerHTML = '<i>⚓</i>建港口 <small>¥1500</small>'; b.onclick = e => { e.stopPropagation(); buildHarbor16(c.id); showDetails(true); }; if (S.points < 1500) b.classList.add('is-off'); }
+      else if (ports < 2) { b.innerHTML = '<i>⚓</i>本城港口 <small>再建一座可开航</small>'; b.classList.add('is-note'); b.disabled = true; }
+      else { b.innerHTML = '<i>⚓</i>本城港口 <small>开航线 ↗</small>'; b.onclick = e => { e.stopPropagation(); if (typeof beginHarborRoute164 === 'function') beginHarborRoute164(c.id); }; }
+      strip.querySelector(':scope > span')?.after(b);
+      // the harbour note (harbor-connection164) goes from under the title to the foot of the sheet: it explains, it is not a status
+      const note = el.querySelector(':scope > .harbor-shared163'); if (note) { b.title = note.textContent.replace(/^⚓\s*/, ''); note.classList.add('ux-harbor-note'); el.appendChild(note); el.querySelector(':scope > .ux-peekbar') && el.appendChild(el.querySelector(':scope > .ux-peekbar')); }
+    } catch {}
+    return r;
+  };
+  showDetails.uxHarbor = true;
+}
 function uxLate() {
   if (uxLate.done) return;   // wrapping twice would stack every layer; done only once the last layer (events.js) is loaded
   if (typeof activityState === 'function') uxLate.done = true;
   uxWrapLateDrawers(); uxWrapLatePanels(); uxWrapHubs(); uxWrapWelcome();
-  uxEndedState(); uxTrayInit(); uxModeStyle(); uxAchievements();
+  uxEndedState(); uxTrayInit(); uxModeStyle(); uxAchievements(); uxExitIcon(); uxBatchOffers(); uxGestureRules(); uxSwipeAttach(); uxDraftInfra(); uxHeaderMenu(); uxFeedbackBox(); uxNoticeTiming(); uxFleetSale(); uxLifeLog(); uxHarborChip();
   if (typeof startAtlasMap === 'function') { const sa = startAtlasMap; startAtlasMap = function (...a) { const r = sa.apply(this, a); if (typeof atlasMenuOpen === 'undefined' || !atlasMenuOpen) uxApplyPlayView(false); return r; }; }
   if (!modalOpen && (typeof atlasMenuOpen === 'undefined' || !atlasMenuOpen)) uxApplyPlayView(false);
   uxEl('hub-build')?.classList?.remove('is-primary');
@@ -1469,6 +1868,7 @@ function uxLate() {
     return r;
   };
   uxEl('notice')?.closest?.('.notice-wrap')?.addEventListener('click', e => { if (e.target.closest('#notice-close')) return; if (/活动邀请/.test(uxEl('notice').textContent)) uxOpenHub('goal', 1); });
+  uxNoticeIcon();
   uxNoticeDismiss();   // outermost: sees the banner text after every layer (and the rename) has written it
   updateUI();
 }
@@ -1492,7 +1892,7 @@ function uxViewFor(p, cx, cy, s) { return view.rot ? { x: cx + p.y * s, y: cy - 
 function uxVisibleRect() {
   const header = (document.querySelector('header')?.getBoundingClientRect().bottom || 60) + 8;
   // Panels are cut first against the header alone; notices and the undo pill are overlays applied afterwards.
-  const overlays = Math.max(0, ...['.top-stack', '.undo-build'].map(q => { const e = document.querySelector(q); const r = e && !e.hidden && e.getBoundingClientRect(); return r && r.height ? r.bottom + 12 : 0; }));
+  const overlays = Math.max(0, ...['.top-stack'].map(q => { const e = document.querySelector(q); const r = e && !e.hidden && e.getBoundingClientRect(); return r && r.height ? r.bottom + 12 : 0; }));
   const rect = { l: 14, r: W - 14, b: H - 12, t: header };
   // Panels can sit at the bottom (portrait sheets, docks) or at a side (landscape details, route list).
   // For each one that overlaps the map, trim whichever edge keeps the larger usable area.
@@ -1554,10 +1954,23 @@ function uxPeekBar() {
   const d = uxEl('details'); if (!d || d.hidden || !d.appendChild) return;
   let b = d.querySelector(':scope > .ux-peekbar');
   if (!b) { b = document.createElement('button'); b.className = 'ux-peekbar'; b.innerHTML = '展开全部 <i>⌃</i>'; b.onclick = () => uxSheetSet('full'); d.appendChild(b); }
+  uxPeekFit();
+}
+// Peek shows the essentials and stops there (user 2026-11-16: compact portrait): a line down to its stops and route
+// tools, a city down to its facility strip. The sheet's own cap (36%) still applies; everything else is one tap away.
+function uxPeekFit() {
+  const d = uxEl('details'); if (!d?.style?.setProperty) return;
+  if (!portraitMode || d.hidden || !d.classList.contains('is-peek')) { d.style.removeProperty('max-height'); return; }
+  const cut = selected?.type === 'line' ? (d.querySelector(':scope > .ux-route-tools.is-picking') || d.querySelector(':scope > .ux-route'))
+    : (d.querySelector(':scope > .ux-fac-strip') || d.querySelector(':scope > .ux-load'));
+  if (!cut || !cut.offsetHeight) { d.style.removeProperty('max-height'); return; }
+  const h = Math.ceil(cut.offsetTop + cut.offsetHeight + 8 + 30);   // + the 30px peek bar
+  if (d.style.getPropertyValue('max-height') !== h + 'px') d.style.setProperty('max-height', h + 'px', 'important');
 }
 function uxSheetSet(state) {
   const d = uxEl('details'); if (!d) return;
   d.classList.toggle('is-peek', state === 'peek'); d.classList.toggle('is-full', state === 'full');
+  uxPeekFit();
   if (state === 'peek') d.scrollTop = 0;
   setTimeout(() => requestAnimationFrame(uxFrameSelection), 240);   // after the height transition
 }
@@ -1604,14 +2017,50 @@ globalThis.QUEUE_SHOWN = 12;           // two rows of waiting squares, then "+n"
 // that decides what to do (181/128) is on the map instead of "+169" and a wall of squares.
 // In a dense or zoomed-out view every city with more than one row waiting gets the one-row + pill form.
 globalThis.QUEUE_SHOWN_FOR = c => { const n = c.q?.length || 0, dense = view.scale < 1 || realCities().filter(x => !x.dormant).length >= 8; return n > 12 || dense && n > 6 ? 6 : 12; };
+// seconds of real time before this station costs a life, or null when it is not about to (the rule of release16.js
+// updateCongestion: pressure grows while the hall is full and costs a life at 160 s, 205 s for a tourist town)
+function uxLifeLeft(c) {
+  if (S.lives <= 0 || !c || c.dormant || c.grace > 0 || c.shield > 0 || typeof capacity !== 'function') return null;
+  const cap = capacity(c), n = c.q.filter(p => !p.cardId && !p.eventId).length; if (!cap || n < cap) return null;
+  const limit = c.shape === 1 ? 205 : 160, rest = Math.max(0, limit - (c.congestionPressure || 0)), real = rest / Math.max(1, S.speed || 1);
+  return real <= 30 ? Math.max(1, Math.ceil(real)) : null;
+}
 globalThis.QUEUE_TAIL = function (c, px, py) {
   const n = c.q.length, cap = typeof capacity === 'function' ? capacity(c) : 0, ratio = cap ? n / cap : 0;
-  const label = cap ? n + '/' + cap : String(n), w = 7 + label.length * 5.6, x = px + 6 * 11 + 2, y = py - 1;
+  // close to losing a life (≤ 30 s of real time at the current speed): "44/24 · 距扣命约 12 秒"; back to the count on recovery
+  const left = uxLifeLeft(c), label = (cap ? n + '/' + cap : String(n)) + (left !== null ? ' · 距扣命约 ' + left + ' 秒' : '');
+  let w = 7 + label.length * 5.6, h = 11, font = 8.5, x = px + 6 * 11 + 2, y = py - 1;
   const [bg, fg] = ratio >= 1 ? ['#b5573f', '#fff'] : ratio >= .7 ? ['#e9c27a', '#4a3a1c'] : ['#eef1ea', '#4f5f58'];
-  ctx.save(); ctx.globalAlpha *= .96; ctx.fillStyle = bg; ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(x, y, w, 11, 5.5); else ctx.rect(x, y, w, 11);
-  ctx.fill(); ctx.restore();
-  text(label, x + w / 2, y + 8.3, 8.5, fg);
+  ctx.save();
+  if (left !== null) {
+    // The queue normally grows to the right. Keep a visible station's actionable warning on screen
+    // even when its passenger squares run off the edge. No camera move or additional overlay.
+    const k = view.scale * (globalThis.CITY_GLYPH?.() ?? 1), {x:sx, y:sy} = toScreen(c);
+    font = 11 / k; h = 16 / k; y = py + 4.5 - h / 2;
+    ctx.font = font + 'px system-ui,sans-serif'; w = ctx.measureText(label).width + 10 / k;
+    if (sx >= 0 && sx <= W && sy >= 0 && sy <= H) {
+      const width = w * k, height = h * k, row = sy + (y - c.y) * k, gap = radius(c) * k + 9;
+      const center = Math.max(4, Math.min(W - width - 4, sx - width / 2));
+      const spots = [[sx + (x - c.x) * k, row], [sx - gap - width, row],
+        [center, sy - gap - height], [center, sy + gap]].filter(([x,y]) => x >= 4 && x + width <= W - 4 && y >= 4 && y + height <= H - 4);
+      // A side switch must not put this station's warning over a neighbouring station.
+      const free = ([x,y]) => !S.cities.some(o => {
+        if (o === c || o.removed) return false;
+        const p = toScreen(o), r = radius(o) * k + 4;
+        return p.x + r > x && p.x - r < x + width && p.y + r > y && p.y - r < y + height;
+      });
+      const at = spots.find(free) || spots[0];
+      if (at) { x = c.x + (at[0] - sx) / k; y = c.y + (at[1] - sy) / k; }
+    }
+  }
+  ctx.globalAlpha *= .96; ctx.fillStyle = bg; ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, h / 2); else ctx.rect(x, y, w, h);
+  ctx.fill();
+  if (left !== null) {
+    ctx.fillStyle = fg; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, x + w / 2, y + h / 2);
+  }
+  ctx.restore();
+  if (left === null) text(label, x + w / 2, y + 8.3, font, fg);
   return true;
 };
 // "临江·起始城市圈": the region half is shown for the selected city or when zoomed in, not on every label.
@@ -1629,7 +2078,7 @@ globalThis.SUBTITLE_MIN_SCALE = .8;    // "旅游 · 小镇" only when zoomed in
 // Mission badges: show progress that means something; a row of "0/20" at overview zoom is noise.
 drawMissionBadges = function () {
   for (const c of realCities()) {
-    if (c.dormant) { if (typeof drawCityOpening === 'function') drawCityOpening(c); continue; }
+    if (c.dormant) { if (S.lives > 0 && typeof drawCityOpening === 'function') drawCityOpening(c); continue; }
     const spec = missionSpec(c), rewarded = c.rewardUntil > S.day, label = rewarded ? '奖金已到账' : spec ? c.mission.progress + '/' + spec.goal : '繁荣';
     const focus = selected && ['city', 'stop', 'junction'].includes(selected.type) && selected.id === c.id;
     // the selected city, a just-paid reward, or a mission at least half done; everything else is in 目标 → 城市任务
@@ -1664,26 +2113,39 @@ globalThis.LANE_RAMP = (a, b, len) => {
 // departure directions collide least with segments already placed at its two stations — two corridors leaving a
 // station on the same ray would lie on top of each other. A bend that would cross water or rock is never used.
 const UX_OCT_R = 20;                      // corner radius (world units)
-const uxOctFree = (p, q, type) => { try { const r = requirements(p, q, type); return !(r.bridge || r.tunnel); } catch { return false; } };
+const uxOctFree = (p, q, type) => { try { const r = requirements(p, q, type); return !r.invalid && !(r.bridge || r.tunnel); } catch { return false; } };
 const uxOctDir = (p, q) => (Math.round(Math.atan2(q.y - p.y, q.x - p.x) / (Math.PI / 4)) + 8) % 8;
+// Options per station pair are fixed while the towns and the terrain are: cached (lanePoint asks for them for every
+// segment sample and every vehicle, each answer costing three terrain checks). The cache belongs to one game state and
+// is dropped every few seconds anyway; the key carries the towns' coordinates.
+let uxOctOptCache = {}, uxOctOptState = null, uxOctOptAt = 0;   // type → Map(pair number → { ax, ay, bx, by, o })
 function uxOctOptions(a, b, type) {
   if (!a || !b || a.id === undefined || b.id === undefined || type === 'air' || a.kind === 'bridgehead' || b.kind === 'bridgehead' || a === b) return null;
+  if (uxOctOptState !== S) { uxOctOptCache = {}; uxOctOptState = S; }
+  const lo = a.id < b.id ? a : b, hi = lo === a ? b : a, m = uxOctOptCache[type] || (uxOctOptCache[type] = new Map()), k = lo.id * 65536 + hi.id, e = m.get(k);
+  if (e && e.ax === lo.x && e.ay === lo.y && e.bx === hi.x && e.by === hi.y) return e.o;
+  const o = uxOctOptionsNow(a, b, type); m.set(k, { ax: lo.x, ay: lo.y, bx: hi.x, by: hi.y, o }); return o;
+}
+function uxOctOptionsNow(a, b, type) {
   const lo = a.id < b.id ? a : b, hi = lo === a ? b : a, dx = hi.x - lo.x, dy = hi.y - lo.y, m = Math.min(Math.abs(dx), Math.abs(dy)), sx = Math.sign(dx), sy = Math.sign(dy);
   if (m < 6 || Math.max(Math.abs(dx), Math.abs(dy)) - m < 6 || !uxOctFree(lo, hi, type)) return null;
   const A = { x: lo.x + sx * m, y: lo.y + sy * m }, B = { x: hi.x - sx * m, y: hi.y - sy * m };
   const ok = bend => uxOctFree(lo, bend, type) && uxOctFree(bend, hi, type);
   return { lo, hi, A: ok(A) ? [lo, A, hi] : null, B: ok(B) ? [lo, B, hi] : null };
 }
-let uxOctPlan = new Map(), uxOctPlanKey = '', uxOctPlanAt = -1e9, uxOctPlanState = null;
+let uxOctPlan = new Map(), uxOctPlanKey = '', uxOctPlanAt = -1e9, uxOctPlanState = null, uxOctPlanCalls = 0;
 function uxOctPlanNow() {
   // Paths retain city objects: map switches and reloads invalidate them before the time throttle.
   // Note: .agents/notes/implemented/feature/2026-11-08-design-pass.md (折线路径缓存)
   if (uxOctPlanState !== S) {
-    uxOctPlanState = S; uxOctPlan = new Map(); uxOctPlanKey = null; uxOctPlanAt = -1e9;
+    uxOctPlanState = S; uxOctPlan = new Map(); uxOctPlanKey = null; uxOctPlanAt = -1e9; uxOctPlanCalls = 0;
   }
+  // asked thousands of times a frame (every lane sample, every vehicle): the clock is read every 64th call only
+  if (uxOctPlanCalls++ & 63) return uxOctPlan;
   const now = typeof performance !== 'undefined' ? performance.now() : 0;
   if (now - uxOctPlanAt < 200) return uxOctPlan;
   uxOctPlanAt = now;
+  if (now - uxOctOptAt > 3000) { uxOctOptCache = {}; uxOctOptAt = now; }   // terrain checks are re-read every few seconds
   const lines = [...(S?.lines || []), ...(draft?.stops ? [draft] : [])];
   const key = lines.map(l => l.type + ':' + l.stops.join(',')).join('|');
   if (key === uxOctPlanKey) return uxOctPlan;
@@ -1782,10 +2244,21 @@ function uxOctInfra(draw) {
   };
 }
 // ---------- transport modes ----------
-const UX_MODE_RANK = { bus: 0, emu: 1, rail: 2, air: 3 };
+const UX_MODE_RANK = { bus: 0, emu: 1, rail: 2, ship: 2.5, ferry: 2.6, air: 3 };
 // widths relative to upstream's (bus 3.7, 动车 4.5, 高铁 7, air 2.8), so the zoom scaling applied by earlier layers stays
 const UX_MODE_WIDTH = { bus: 3.4 / 3.7, emu: 5.2 / 4.5, rail: 7 / 7, air: 2.2 / 2.8 };
-globalThis.LINE_ORDER = lines => lines.map((l, i) => [l, i]).sort((x, y) => (UX_MODE_RANK[x[0].type] ?? 0) - (UX_MODE_RANK[y[0].type] ?? 0) || x[1] - y[1]).map(x => x[0]);
+// Re-routing a line (user 2026-11-15: 改线时看不清当前走向): the line as it is now stays on the map as a wide, pale band
+// in its colour under everything else, and the new route (upstream's dashed draft) runs over it — before and after at a
+// glance. Drawn when the line pass begins (LINE_ORDER is asked for the drawing order right before lines are drawn).
+function uxDraftGhost() {
+  if (!draft?.original || ctx.canvas !== cv || typeof strokeLaneRange !== 'function') return;
+  const l = S.lines.find(x => x.id === draft.original); if (!l || l.stops.length < 2) return;
+  ctx.save();
+  try { lineStyle(l); ctx.setLineDash([]); ctx.globalAlpha = .3; ctx.lineWidth *= 3.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (let i = 1; i < l.stops.length; i++) { const a = S.cities[l.stops[i - 1]], b = S.cities[l.stops[i]]; if (a && b) { strokeLaneRange(a, b, l); ctx.stroke(); } } } catch {}
+  ctx.restore();
+}
+globalThis.LINE_ORDER = lines => (uxDraftGhost(), lines).map((l, i) => [l, i]).sort((x, y) => (UX_MODE_RANK[x[0].type] ?? 0) - (UX_MODE_RANK[y[0].type] ?? 0) || x[1] - y[1]).map(x => x[0]);
 function uxModeStyle() {
   if (typeof lineStyle !== 'function' || lineStyle.uxMode) return;
   const ls = lineStyle;
@@ -1871,6 +2344,9 @@ function uxPlayTargetRaw() {
   if (portraitMode) {
     const band = fitBand(); s = PLAY_MIN_SCALE;
     box = { l: band.side + UX_FIT_PAD.l, r: W - band.side - UX_FIT_PAD.r, t: band.top + UX_FIT_PAD.t, b: band.bottom - UX_FIT_PAD.b };
+    // a young network (≤ 6 towns, e.g. the three opening towns of the west) is shown whole: zoom out just enough to fit
+    // it rather than leave a town on the screen edge with its name cut off (never below 0.5)
+    if (active.length <= 6) { const xs = active.map(c => c.x), ys = active.map(c => c.y), need = Math.min((box.r - box.l) / Math.max(1, Math.max(...xs) - Math.min(...xs)), (box.b - box.t) / Math.max(1, Math.max(...ys) - Math.min(...ys))); if (need < s) s = Math.max(.5, need); }
   } else {
     // landscape phone: the free map window is what remains after the route list (left) and the dock (bottom)
     const r = uxVisibleRect(); box = { l: r.l + 20, r: r.r - 70, t: r.t + 26, b: r.b - 34 };

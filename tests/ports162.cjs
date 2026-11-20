@@ -23,7 +23,7 @@ assert(run('geometryAtStart166===JSON.stringify({lakes:lakePolygons161,mountains
 assert(run('ATLAS_MAPS.ocean.hills.every((e,i)=>e.x===hillsBefore163[i].x-480)'));
 run(`var plain162=[];for(let y=960;y<=1920;y+=240)for(let d of [120,360])plain162.push({x:eastCoastX163(y)-d,y});`);
 assert(run('plain162.every(p=>cityBuildable(p.x,p.y,2)&&!hills.some(e=>inEllipse(p,e)))'));
-run('save();load()');assert.equal(run('S.lines.at(-1).type'),'ship');assert.equal(run('S.release'),'1.6.10');assert.equal(run('saleValue16("ferry",1)'),4800);
+run('save();load()');assert.equal(run('S.lines.at(-1).type'),'ship');assert.equal(run('S.release'),require('../package.json').version);assert.equal(run('saleValue16("ferry",1)'),4800);
 run(`var oldDock162=null;for(let y=160;y<3200&&!oldDock162;y+=15)for(let x=50;x<3550&&!oldDock162;x+=15){let p={x,y},s=nearestShore161(p,coastBefore164);if(!land16(p)||s.d<42||s.d>160)continue;let len=Math.hypot(s.dx,s.dy),q=[1,-1].map(k=>({x:s.x-k*s.dy/len*35,y:s.y+k*s.dx/len*35})).find(q=>!polygon16(q,coastBefore164));if(q&&!sea16(q))oldDock162={p,q};}if(!oldDock162)throw Error('missing old dock migration fixture');var c162=S.cities[0],beforeDock162={...c162};Object.assign(c162,oldDock162.p,{harbor:{...oldDock162.q,built:10}});save();load();`);
 assert(run('sea16(S.cities[0].harbor)'));assert.equal(run('S.cities[0].harbor.built'),10);assert.equal(run('S.cities[0].x'),run('oldDock162.p.x'));
 assert.deepEqual(g.errors,[]);g.dom.window.close();console.log('PASS port/node separation at three zooms across six modes, native port drag, exact route tap/detail, inland hills, north mainland, compatible saved sea route and ferry sale');

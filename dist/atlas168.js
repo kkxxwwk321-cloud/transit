@@ -7,7 +7,7 @@ function mapImage168(id,revision=2){return revision===1?terrainImages167[id]:ter
 const resetBefore168=reset;
 reset=function(...args){
  const r=resetBefore168(...args);const oceanSeeds=S.mapId==='ocean'?realCities().slice(0,3).map(c=>({x:c.x,y:c.y})):null;
- S.terrainRevision167=2;S.release='1.6.10';activateAtlasGeometry(S.mapId);
+ S.terrainRevision167=2;S.release='1.6.11';activateAtlasGeometry(S.mapId);
  const desired={east:[[.66,.45],[.79,.42],[.73,.52]],west:[[.3572,.4524],[.4456,.5204],[.4864,.602]]},placed=[];
  for(let i=0;i<3;i++){const p=oceanSeeds?oceanSeeds[i]:safeSeed167(...desired[S.mapId][i],placed);Object.assign(S.cities[i],p);placed.push(p);}
  if(S.mapId==='east'){
@@ -62,7 +62,7 @@ portraitMinScale=function(width=W,height=H){if(!newAtlas167())return minimumBefo
 clampPortraitCamera=function(target=view){if(!newAtlas167())return clampBefore168(target);if(!W||!H)return target;const b=terrainRevision168()&&S.mapId==='ocean'?marineBounds168():mapSpec.bounds,band=fitBand();target.scale=Math.max(portraitMinScale(),Math.min(portraitMaxScale(),Number.isFinite(target.scale)?target.scale:1));const s=target.scale;for(const [axis,lo,hi,start,end]of [['x','xmin','xmax',0,W],['y','ymin','ymax',band.top,band.bottom]]){const extent=(b[hi]-b[lo])*s;target[axis]=extent<=end-start?(start+end)/2-(b[lo]+b[hi])/2*s:Math.max(end-b[hi]*s,Math.min(start-b[lo]*s,Number.isFinite(target[axis])?target[axis]:0));}return target;};
 fit=function(){if(!newAtlas167())return fitBefore168();const cs=realCities().filter(c=>!c.removed),band=fitBand();if(!cs.length)return;const x0=Math.min(...cs.map(c=>c.x))-110,x1=Math.max(...cs.map(c=>c.x))+110,y0=Math.min(...cs.map(c=>c.y))-140,y1=Math.max(...cs.map(c=>c.y))+110,scale=Math.max(portraitMinScale(),Math.min(.65,(W-32)/(x1-x0),(band.bottom-band.top)/(y1-y0)));Object.assign(view,clampPortraitCamera({scale,x:W/2-(x0+x1)/2*scale,y:(band.top+band.bottom)/2-(y0+y1)/2*scale}));};
 const focusBefore168=portraitFocusCity;
-portraitFocusCity=function(c){if(!newAtlas167())return focusBefore168(c);if(!c||pointers.size)return;const b=fitBand(),p=toScreen(c);if(p.x>=55&&p.x<W-55&&p.y>=b.top+85&&p.y<b.bottom-50)return;animateView(clampPortraitCamera({scale:view.scale,x:W/2-c.x*view.scale,y:(b.top+b.bottom)/2-c.y*view.scale}),220);};
+portraitFocusCity=function(c){if(!newAtlas167())return focusBefore168(c);if(!c||pointers.size)return;const b=fitBand(),p=toScreen(c);if(p.x>=55&&p.x<W-55&&p.y>=b.top+85&&p.y<b.bottom-50)return;uxAutoMove(()=>animateView(clampPortraitCamera({scale:view.scale,x:W/2-c.x*view.scale,y:(b.top+b.bottom)/2-c.y*view.scale}),220));};
 function overview168(){if(!newAtlas167())return fit();if(uxOverviewOn){uxOverviewOn=false;fit();}else{uxOverviewOn=true;const b=mapSpec.bounds,band=fitBand(),scale=portraitMinScale();Object.assign(view,clampPortraitCamera({scale,x:W/2-(b.xmin+b.xmax)/2*scale,y:(band.top+band.bottom)/2-(b.ymin+b.ymax)/2*scale}));}uxSyncOverviewButton();}
 $('overview').onclick=overview168;
 // Full-map space is a quiet atmospheric margin; edge feathering avoids stretched terrain or seams.

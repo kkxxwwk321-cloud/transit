@@ -20,7 +20,7 @@ for(const scale of [.7,1.4]){
  assert(run('!!circle159'));
  assert.equal(run('routeHit(circle159)?.l.id'),run('lesson159.id'),'ring must be on the visible, draggable road');
  assert.equal(run('hitCity(circle159)'),null,'ring must not be mistaken for a city press');
- run('var point159=toScreen(circle159),dest159=toScreen(S.cities[2]);beginPointer({pointerId:160,clientX:point159.x,clientY:point159.y});movePointer({pointerId:160,clientX:dest159.x,clientY:dest159.y});finishPointer({pointerId:160,type:"pointerup",clientX:dest159.x,clientY:dest159.y});');
+ run('S.tutorial123={stage:"restore-end",line:lesson159.id,end:2};var point159=toScreen(circle159),dest159=toScreen(S.cities[2]);beginPointer({pointerId:160,clientX:point159.x,clientY:point159.y});movePointer({pointerId:160,clientX:dest159.x,clientY:dest159.y});finishPointer({pointerId:160,type:"pointerup",clientX:dest159.x,clientY:dest159.y});');
  assert(run('draft?.stops.includes(2)'),'dragging from the ring must actually restore the city');
  run('cancelDraft(false)');
 }
@@ -28,7 +28,7 @@ for(const scale of [.7,1.4]){
 run('lesson159.stops=[0,2];clearSelection();view.scale=1;var middleRing159=tutorialRestorePoint159(lesson159,S.cities[1]);');
 assert.equal(run('routeHit(middleRing159)?.l.id'),run('lesson159.id'));
 assert.equal(run('hitCity(middleRing159)'),null);
-run('var midStart159=toScreen(middleRing159),midDest159=toScreen(S.cities[1]);beginPointer({pointerId:161,clientX:midStart159.x,clientY:midStart159.y});movePointer({pointerId:161,clientX:midDest159.x,clientY:midDest159.y});finishPointer({pointerId:161,type:"pointerup",clientX:midDest159.x,clientY:midDest159.y});');
+run('S.tutorial123={stage:"restore-end",line:lesson159.id,end:1};var midStart159=toScreen(middleRing159),midDest159=toScreen(S.cities[1]);beginPointer({pointerId:161,clientX:midStart159.x,clientY:midStart159.y});movePointer({pointerId:161,clientX:midDest159.x,clientY:midDest159.y});finishPointer({pointerId:161,type:"pointerup",clientX:midDest159.x,clientY:midDest159.y});');
 assert(run('draft?.stops.includes(1)'));run('cancelDraft(false)');
 assert.equal(run('runtimeFault13'),null);assert.equal(g.errors.length,0);g.dom.window.close();
 console.log('PASS curved-road tutorial: actual deletion follows sampled bends; reconnection ring is on hit-tested road; both gestures work after camera pan/zoom');

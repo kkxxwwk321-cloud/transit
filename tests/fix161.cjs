@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict'),g=require('./harness156.cjs')({legacyTerrain166:true}),{run,w}=g;
 function ocean(){run('activateAtlasGeometry("ocean");reset();atlasMenuOpen=false;closeModal();S.tutorial123=null;S.paused=false;');}
-ocean();assert.equal(run('S.release'),'1.6.10');assert.equal(run('$("date").textContent'),'6月1日');assert.match(run('$("calendar-tag").textContent'),/^第1年 · /);assert.equal(w.getComputedStyle(w.document.querySelector('.calendar')).flexDirection,'column');
+ocean();assert.equal(run('S.release'),require('../package.json').version);assert.equal(run('$("date").textContent'),'6月1日');assert.match(run('$("calendar-tag").textContent'),/^第1年 · /);assert.equal(w.getComputedStyle(w.document.querySelector('.calendar')).flexDirection,'column');
 run(`var a161={x:3010,y:1700,id:100},b161={x:2730,y:2190,id:101},p161=landRoute161(a161,b161,'bus');`);
 assert(!run('landSegment161(a161,b161)'));assert(run('p161&&p161.points.length>2&&p161.length>Math.hypot(a161.x-b161.x,a161.y-b161.y)'));
 assert(run('p161.points.slice(1).every((p,i)=>landSegment161(p161.points[i],p))'));
