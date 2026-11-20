@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict'),g=require('./harness156.cjs')({legacyTerrain166:true}),{run,w,timers}=g;
+run(`activateAtlasGeometry('ocean');reset();atlasMenuOpen=false;S.tutorial123=null;closeModal();while(realCities().length<10){S.day=cityDay16(realCities().length+1);spawnCity();}S.day=casinoState16().nextOpen;updateUI();`);
+assert(w.document.querySelector('.casino-first165'));run('closeModal();updateUI()');assert(!run('modalOpen'));
+run('S.day+=10;updateUI()');assert(run('modalOpen'));assert(run('casinoNotice16.hidden'));
+run('showCasino16()');w.document.getElementById('casino-entry16').value='100';run('enterCasino16()');assert.equal(w.document.querySelectorAll('#modal-content .close').length,0);
+run('closeModal();uxDismissModal()');assert(run('modalOpen&&!!casinoState16().session'));
+const sheet=w.document.getElementById('modal-content');run('portraitMode=true');for(const [type,y]of [['touchstart',20],['touchmove',200],['touchend',200]]){const e=new w.Event(type,{bubbles:true,cancelable:true});Object.defineProperty(e,'touches',{value:[{clientY:y}]});sheet.dispatchEvent(e);}assert.equal(sheet.style.transform,'');
+w.document.getElementById('slot-stake16').value='10';run('spinCasino16()');assert.equal(run('casinoState16().session.spins'),1);assert(timers.some(t=>t.ms===2050));assert(timers.some(t=>t.ms===110));run('closeModal();exitCasino16()');assert(run('!!casinoState16().session'));
+for(const t of [...timers].filter(t=>[800,1250,2050].includes(t.ms)))t.f();
+run('save();load();renderCasino16();');const balance=run('casinoState16().session.balance');const before=run('S.points');run('exitCasino16();exitCasino16()');assert.equal(run('S.points'),before+balance/100);assert(!run('casinoState16().session'));g.dom.window.close();console.log('PASS repeat large notice, locked casino, touch isolation, spin audio schedule, delayed last reel, reload and exactly-once cashout');

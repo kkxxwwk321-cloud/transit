@@ -14,7 +14,7 @@ function transportRidesWeb(u,context){
   if(l.retiring||l.type==='air'&&weatherFactor(city,'air')===0)continue;
   let vehicles=S.vehicles.filter(v=>v.line===l.id&&!v.retired&&!v.recall&&!v.stops);
   let groups=new Map();
-  for(let v of vehicles){let sig=JSON.stringify([v.service||{},fullLoop130(v,l)?v.dir:0]);if(!groups.has(sig))groups.set(sig,[]);groups.get(sig).push(v);}
+  for(let v of vehicles){let sig=JSON.stringify([serviceRange(v,l).lo,serviceRange(v,l).hi,[...(v.service?.mode==='express'?v.service.skip||[]:[])].sort((a,b)=>a-b),fullLoop130(v,l)?v.dir:0]);if(!groups.has(sig))groups.set(sig,[]);groups.get(sig).push(v);}
   for(let vs of groups.values()){
    let v=vs[0],{lo,hi}=serviceRange(v,l),loop=fullLoop130(v,l),period=0;
    for(let j=lo;j<hi;j++){let t=serviceTravelTime(v,l,j,1);period+=Number.isFinite(t)?t+1:25;}
@@ -44,7 +44,7 @@ function transportRidesWeb(u,context){
  context.adj.set(u,edges);return edges;
 }
 plan=function(start,p,options={}){
- let onboard=options.onboard||null,exact=transportExactWeb(p),key=JSON.stringify([start,p.origin,exact,exact?p.dest:null,p.color,p.shape,p.destRegion??null,onboard?.id??null,onboard?.dir??null]);
+ let boarding=options.boarding||null,onboard=options.onboard||null,exact=transportExactWeb(p),key=JSON.stringify([start,p.origin,exact,exact?p.dest:null,p.color,p.shape,p.destRegion??null,onboard?.id??null,onboard?.dir??null,boarding?.id??null,boarding?.dir??null]);
  if(routingBatch?.routes.has(key))return routingBatch.routes.get(key);
  let context=routingBatch?(routingBatch.transportWeb??={adj:new Map()}):{adj:new Map()};
  let n=S.cities.length,dist=Array(n).fill(Infinity),rides=Array(n).fill(Infinity),first=Array(n).fill(null),done=new Set(),result=null;dist[start]=0;rides[start]=0;
@@ -53,8 +53,9 @@ plan=function(start,p,options={}){
   if(u<0||!Number.isFinite(dist[u]))break;done.add(u);
   if(u!==start&&matchesDestination(S.cities[u],p)){result={...first[u],target:u,time:dist[u],rides:rides[u]};break;}
   for(let e of transportRidesWeb(u,context)){
+   if(u===start&&boarding&&!(e.first.line===boarding.line&&e.first.dir===boarding.dir&&e.first.vehicleIds.includes(boarding.id)))continue;
    let stay=u===start&&onboard&&e.first.line===onboard.line&&e.first.dir===onboard.dir&&e.first.vehicleIds.includes(onboard.id);
-   let nd=dist[u]+e.travel+(stay?0:e.wait+e.transfer),nr=rides[u]+(stay?0:1);
+   let nd=dist[u]+e.travel+(stay?0:((u===start&&boarding)?0:e.wait)+e.transfer),nr=rides[u]+(stay?0:1);
    if(nd<dist[e.to]-1e-6||Math.abs(nd-dist[e.to])<=1e-6&&nr<rides[e.to]){dist[e.to]=nd;rides[e.to]=nr;first[e.to]=first[u]||e.first;}
   }
  }

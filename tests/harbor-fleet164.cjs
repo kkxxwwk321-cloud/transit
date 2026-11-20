@@ -1,4 +1,4 @@
-const assert=require('node:assert/strict'),g=require('./harness156.cjs')(),{run,w}=g;
+const assert=require('node:assert/strict'),g=require('./harness156.cjs')({legacyTerrain166:true}),{run,w}=g;
 run(`activateAtlasGeometry('ocean');reset();atlasMenuOpen=false;closeModal();S.tutorial123=null;S.points=50000;buildHarbor16(0);buildHarbor16(1);beginHarborRoute164(0);draft.stops=[0,1];commitDraft(true);var shipLine164=S.lines.at(-1),shipCount164=()=>S.vehicles.filter(v=>v.line===shipLine164.id).length;shop();`);
 assert(run('$("modal-content").textContent.includes("小轮船")&&$("modal-content").textContent.includes("大轮渡")'));
 assert(run('$("modal-content").textContent.includes("与飞机同步开放")'));

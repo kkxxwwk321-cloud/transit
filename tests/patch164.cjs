@@ -1,9 +1,10 @@
-const assert=require('node:assert/strict'),g=require('./harness156.cjs')(),{run,w}=g;
+const assert=require('node:assert/strict'),g=require('./harness156.cjs')({legacyTerrain166:true}),{run,w}=g;
+(async()=>{g.w.HTMLElement.prototype.scrollTo=function(){};for(const name of ['westImage166','sampleArtImage','oceanBase166'])Object.defineProperty(run(name),'complete',{value:true});
 // Confirmation must restart each registered map, preserve other maps and best records.
 for(let id of ['east','west','ocean']){
  run(`activateAtlasGeometry('${id}');reset();atlasMenuOpen=false;S.tutorial123=null;S.day=28;S.points=1234;S.portraitStarted=true;save();var beforeBest164=JSON.stringify(atlasBest());showAtlasMaps(false);atlasSelected='${id}';portraitAskRestart();`);
  assert(run('$("modal-content").textContent.includes("确认重新开始")'));
- const confirm=[...w.document.querySelectorAll('#modal-content button')].find(b=>b.textContent==='确认重新开始');assert(confirm);run(confirm.getAttribute('onclick'));
+ const confirm=[...w.document.querySelectorAll('#modal-content button')].find(b=>b.textContent==='确认重新开始');assert(confirm);g.raf13.clear();run(confirm.getAttribute('onclick'));for(let frame=0;frame<30;frame++){for(const [id,fn]of [...g.raf13]){g.raf13.delete(id);fn(0);}await Promise.resolve();await Promise.resolve();}assert(!run('mapLoading166'));
  assert.equal(run('S.mapId'),id);assert.equal(run('Math.floor(S.day)'),0);assert.equal(run('realCities().length'),3);assert.equal(run('atlasMenuOpen'),false);assert.equal(run('modalOpen'),false);assert.equal(run('atlasRestart'),false);assert.equal(run('JSON.stringify(atlasBest())'),run('beforeBest164'));
  if(id==='ocean')assert.equal(run('S.points'),9000);
 }
@@ -19,3 +20,5 @@ assert(run('curviness164.every(d=>d>5)'),'sea routes have visibly broader bends'
 run(`activateAtlasGeometry('ocean');reset();atlasMenuOpen=false;S.tutorial123=null;var notice164=[],toastBefore164=toast;toast=(...a)=>{notice164.push(a[0]);return toastBefore164(...a)};while(realCities().length<10){S.day=cityDay16(realCities().length+1);spawnCity();}var casino164=casinoState16(),money164=S.points;`);assert(run('casinoCity16().casino'));assert.equal(run('casino164.built'),run('casinoCity16().discoveredAt'));assert.equal(run('casino164.nextOpen-casino164.built'),10);assert(!run('notice164.some(t=>/赌城建成|赌场建成/.test(t))'));
 run('migrate16();buildCasino16();save();load()');assert.equal(run('S.points'),run('money164'));assert(run('casinoCity16().casino'));assert.equal(run('casinoState16().nextOpen'),run('casino164.nextOpen'));
 assert.deepEqual(g.errors,[]);assert.equal(run('runtimeFault13'),null);g.dom.window.close();console.log('PASS all-map restart/cancel/preserved saves, instant A-B-C port drag, automatic endpoint extension, one-boat multi-stop delivery, broad sea-safe curves, free silent Vegas casino and save migration');
+
+})().catch(e=>{console.error(e);process.exitCode=1;g.dom.window.close()});

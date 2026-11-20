@@ -1,0 +1,4 @@
+const assert=require('node:assert/strict'),create=require('./harness156.cjs');
+let g=create({legacyTerrain167:true});assert(g.run('!existingSave167&&newAtlas167()&&S.cities.every(c=>cityBuildable(c.x,c.y,2))'));g.dom.window.close();
+const old=create({legacyTerrain166:true});old.run(`activateAtlasGeometry('west');reset();S.day=78;save();`);let saves={};for(let i=0;i<old.w.localStorage.length;i++){let k=old.w.localStorage.key(i);saves[k]=old.w.localStorage.getItem(k);}const cities=old.run('JSON.stringify(S.cities.map(c=>({x:c.x,y:c.y,id:c.id})))');old.dom.window.close();
+g=create({saves,legacyTerrain167:true});assert(g.run('existingSave167&&!newAtlas167()'));assert.equal(g.run('S.day'),78);assert.equal(g.run('JSON.stringify(S.cities.map(c=>({x:c.x,y:c.y,id:c.id})))'),cities);assert.equal(g.errors.length,0);g.dom.window.close();console.log('PASS first-ever launch uses new terrain; existing old save is never auto-reset');

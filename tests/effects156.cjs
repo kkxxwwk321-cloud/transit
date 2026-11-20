@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const createGame = require('./harness156.cjs');
+const createGame = (opts=>require('./harness156.cjs')({legacyTerrain166:true,...opts}));
 (async () => {
   const g = createGame(), {run,w} = g;
   assert.equal(g.plays,0);

@@ -1,4 +1,4 @@
-const assert=require('node:assert/strict'),g=require('./harness156.cjs')(),{run,w}=g;
+const assert=require('node:assert/strict'),g=require('./harness156.cjs')({legacyTerrain166:true}),{run,w}=g;
 function ocean(){run('activateAtlasGeometry("ocean");reset();atlasMenuOpen=false;closeModal();S.tutorial123=null;');}
 ocean();assert.equal(run('S.points'),9000);assert.equal(run('formatDate().month'),6);assert(run('realCities().every(land16)&&realCities().some(c=>!!harborPoint16(c))'));
 run('showEngineering()');assert.deepEqual([...w.document.querySelectorAll('.ux-hub-tabs button')].map(b=>b.textContent),['桥梁与道路','车辆','天气','科研']);

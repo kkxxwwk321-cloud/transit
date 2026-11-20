@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const createGame=require('./harness156.cjs');
+const createGame=(opts=>require('./harness156.cjs')({legacyTerrain166:true,...opts}));
 const g=createGame(),{run,w}=g;
 run("activateAtlasGeometry('west');reset();atlasMenuOpen=false;closeModal();S.tutorial123=null;S.interruption=null;");
 assert.equal(run('S.basinTerrain158'),3);
@@ -10,7 +10,7 @@ assert.equal(run('quote158.cash'),5670);
 const newGeometry=run('JSON.stringify(mountainPolygons)'),lines=run('JSON.stringify(S.lines)'),cities=run('JSON.stringify(S.cities.map(c=>[c.x,c.y]))');
 run('save();load()');assert.equal(run('JSON.stringify(mountainPolygons)'),newGeometry);
 // Previously restored games retain their separated ridges and exact construction.
-run('S.basinTerrain158=2;save();load()');
+run('delete S.terrainArt166;S.basinTerrain158=2;save();load()');
 assert.equal(run('JSON.stringify(mountainPolygons)'),run('JSON.stringify(westRangesRestored1510.map(r=>r.poly))'));
 assert.equal(run('JSON.stringify(S.lines)'),lines);
 // Previously expanded games retain the exact one-ridge terrain through load.

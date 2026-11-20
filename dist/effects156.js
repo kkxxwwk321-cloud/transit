@@ -1,5 +1,5 @@
 'use strict';
-// Local connection and card effects with persistent sound settings.
+// Local connection and card effects; background music has independent controls.
 const effectsKey156 = 'transit-effects-v1';
 let effectsPrefs156 = { enabled: true, volume: 0.5 };
 try {
@@ -83,7 +83,7 @@ function renderEffects156() {
   if (volume && document.activeElement !== volume) volume.value = Math.round(effectsPrefs156.volume * 100);
 }
 function openEffects156() {
-  openModal('<div class="effects-sheet156"><div class="modal-head"><h2>声音设置</h2><button class="close" onclick="closeModal()" aria-label="关闭声音设置">×</button></div><div class="effects-row156"><label for="effects-on156">游戏音效</label><button id="effects-on156" onclick="setEffects156(\'enabled\',!effectsPrefs156.enabled)"></button></div><label class="effects-volume156" for="effects-volume156">音量<input id="effects-volume156" type="range" min="0" max="100" step="5" oninput="setEffects156(\'volume\',this.value/100)"></label><p>包含连接城市、翻牌和高星揭晓音效；翻牌声采用较低音量。</p><button onclick="playConnect156()">试听</button><button class="primary" onclick="closeModal()">完成</button></div>');
+  openModal('<div class="effects-sheet156"><div class="modal-head"><h2>声音设置</h2><button class="close" onclick="closeModal()" aria-label="关闭声音设置">×</button></div><div class="effects-row156"><label for="effects-on156">游戏音效</label><button id="effects-on156" onclick="setEffects156(\'enabled\',!effectsPrefs156.enabled)"></button></div><label class="effects-volume156" for="effects-volume156">音量<input id="effects-volume156" type="range" min="0" max="100" step="5" oninput="setEffects156(\'volume\',this.value/100)"></label><p>包含连接城市、翻牌、高星揭晓和偶发轮船汽笛音效；翻牌声采用较低音量。</p><button onclick="playConnect156()">试听</button><button class="primary" onclick="closeModal()">完成</button></div>');
   renderEffects156();
 }
 for (const parent of [document.querySelector('header .controls'), document.querySelector('.atlas-top')]) {

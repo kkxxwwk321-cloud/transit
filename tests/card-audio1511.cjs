@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const g=require('./harness156.cjs')(),{run,w}=g;
+const g=require('./harness156.cjs')({legacyTerrain166:true}),{run,w}=g;
 const flush=()=>{for(const id of [...run('cardTimers1511')])g.timers[id-1].f();};
 (async()=>{
  run(`activateAtlasGeometry('east');reset();atlasMenuOpen=false;S.tutorial123=null;S.interruption=null;closeModal();S.unlocked=['bus','emu','rail','air'];S.cities.forEach(c=>c.dormant=false);activityState().offers=[1,5,6].map(star=>makeActivityCard(star,0,[1,2]));showActivityCards();var cardIds1511=activityState().offers.map(e=>e.id);`);

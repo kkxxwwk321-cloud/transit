@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const createGame = require('./harness156.cjs');
+const createGame = (opts=>require('./harness156.cjs')({legacyTerrain166:true,...opts}));
 const g=createGame(),{run,w}=g;
 for(const map of ['east','west']) {
   run(`activateAtlasGeometry('${map}');reset();atlasMenuOpen=false;closeModal();S.tutorial123=null;S.interruption=null;S.paused=false;S.points=100000;beginDraft('bus');draft.stops=[0,1];commitDraft(true);clearSelection();`);

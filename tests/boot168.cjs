@@ -1,0 +1,6 @@
+const assert=require('node:assert/strict'),create=require('./harness156.cjs');
+const capture=g=>{let out={};for(let i=0;i<g.w.localStorage.length;i++){const key=g.w.localStorage.key(i);out[key]=g.w.localStorage.getItem(key);}return out;};
+for(const version of [0,1,2])for(const id of ['east','west','ocean']){
+ let g=create(version===0?{legacyTerrain166:true}:version===1?{legacyTerrain167:true}:{});g.run(`activateAtlasGeometry('${id}');reset();atlasMenuOpen=false;closeModal();S.tutorial123=null;S.day=42;save();`);const expected=g.run('JSON.stringify({cities:realCities().map(c=>[c.id,c.x,c.y]),mountainPolygons,water:(typeof terrain167==="function"&&terrain167()?.water)||null})'),saves=capture(g);g.dom.window.close();
+ g=create({saves});assert.equal(g.run('S.day'),42);assert.equal(g.run('S.mapId'),id);assert.equal(g.run('S.terrainRevision167||0'),version);assert.equal(g.run('JSON.stringify({cities:realCities().map(c=>[c.id,c.x,c.y]),mountainPolygons,water:(typeof terrain167==="function"&&terrain167()?.water)||null})'),expected,'cold boot geometry drift '+version+' '+id);g.run('render()');assert.equal(g.run('runtimeFault13'),null);assert.deepEqual(g.errors,[]);g.dom.window.close();console.log('PASS revision '+version+' '+id+' cold boot preserves progress, city positions and physical geometry');
+}

@@ -1,4 +1,6 @@
 'use strict';
+// Capture genuine pre-boot saves before the older startup adapters create defaults.
+const existingSave167=(()=>{try{return Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)).some(k=>/^transit-atlas-(?:v1|city-beta|map-)/.test(k));}catch{return true;}})();
 window.TRANSIT_PORTRAIT_LAYOUT=true;
 document.documentElement.classList.add('portrait-shell');
 

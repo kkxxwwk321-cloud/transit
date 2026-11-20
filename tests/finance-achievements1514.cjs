@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const g=require('./harness156.cjs')(),{run,w}=g;
+const g=require('./harness156.cjs')({legacyTerrain166:true}),{run,w}=g;
 const ids=['stockProfit','stockLoss','wealthProfit','wealthLoss'];
 function setup(){run(`
  activateAtlasGeometry('east');reset();atlasMenuOpen=false;closeModal();S.tutorial123=null;S.interruption=null;S.day=10;S.points=10000;
@@ -7,7 +7,7 @@ function setup(){run(`
  S.financial=null;var f1514=financeState();f1514.everBank=true;f1514.everBroker=true;openStockMarket();var s1514=f1514.market.stocks[0];
 `);}
 const has=id=>run(`!!achievements14.unlocked['${id}']`);
-setup();assert.equal(run('ACHIEVEMENTS14.length'),35);
+setup();assert.equal(run('ACHIEVEMENTS14.length'),38);
 for(const [id,name,grade,target] of [['stockProfit','幸运儿','gold',15],['stockLoss','险些腰斩','gold',30],['wealthProfit','靠谱的经理','silver',15],['wealthLoss','打水漂','silver',30]]){
  assert.equal(run(`JSON.stringify(ACHIEVEMENTS14.find(a=>a.id==='${id}'))`),JSON.stringify({id,name,description:run(`ACHIEVEMENTS14.find(a=>a.id==='${id}').description`),grade,category:'金融传奇',target}));
 }
@@ -30,8 +30,8 @@ run('s1514.price=7;achSync14();showAchievements14()');
 for(const [name,grade] of [['幸运儿','gold'],['险些腰斩','gold'],['靠谱的经理','silver'],['打水漂','silver']]){
  const row=[...w.document.querySelectorAll('.ach-row14')].find(el=>el.querySelector('h4')?.textContent.startsWith(name));assert(row);assert(row.querySelector('.ach-badge14.'+grade));assert(row.textContent.includes('%'));
 }
-assert(w.document.querySelector('.uxa-count').textContent.includes('/ 35'));
+assert(w.document.querySelector('.uxa-count').textContent.includes('/ 38'));
 run('save();reset();load();achSync14()');assert(has('stockProfit')&&has('stockLoss'),'achievements persist through reset and loading');
 const persisted=JSON.parse(w.localStorage.getItem('transit-achievements-v1'));assert(persisted.unlocked.stockProfit&&persisted.unlocked.stockLoss);
 assert.equal(g.errors.length,0);g.dom.window.close();
-console.log('PASS 35 achievements: names/medals, precise gain/loss thresholds, actual holdings/bases, category isolation, sale/redemption/settlement capture, percentage display and persistent resets');
+console.log('PASS 38 achievements: names/medals, precise gain/loss thresholds, actual holdings/bases, category isolation, sale/redemption/settlement capture, percentage display and persistent resets');

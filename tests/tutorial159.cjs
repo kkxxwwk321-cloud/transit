@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const g=require('./harness156.cjs')(),{run}=g;
+const g=require('./harness156.cjs')({legacyTerrain166:true}),{run}=g;
 run(`activateAtlasGeometry('east');reset();atlasMenuOpen=false;closeModal();S.tutorial123=null;S.interruption=null;S.points=100000;requirements=()=>({bridge:0,tunnel:0,hill:0});S.cities[0].x=0;S.cities[0].y=0;S.cities[1].x=300;S.cities[1].y=-150;S.cities[2].x=400;S.cities[2].y=250;beginDraft('bus');draft.stops=[0,1,2];commitDraft(true);clearSelection();var lesson159=S.lines[0];`);
 for(const scale of [.7,1.4]){
  run(`view.scale=${scale};view.x=83;view.y=160;var demo159=tutorialTrimPath159(lesson159);`);

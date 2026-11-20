@@ -91,6 +91,7 @@ function uxDismissModal() {
   // Swipe the sheet down from its top to dismiss (phones in portrait).
   let y0 = null, dy = 0;
   sheet.addEventListener('touchstart', e => {
+    if (typeof casinoState16==='function'&&S?.casino16?.session) return;
     if (!portraitMode || sheet.scrollTop > 0 || !sheet.querySelector('.close')) return;
     y0 = e.touches[0].clientY; dy = 0;
   }, { passive: true });
