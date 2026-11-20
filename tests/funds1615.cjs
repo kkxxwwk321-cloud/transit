@@ -9,5 +9,5 @@ for(const [map,start]of [['east',7000],['west',8000],['ocean',12000]]){
  run('stepMoney15();');assert.equal(run('S.points'),4321);assert.equal(run('S.ledger.subsidy-subsidyBefore15'),2000);
  run('S.day=19.99;stepMoney15();');assert.equal(run('S.points'),6321);assert.equal(run('S.ledger.subsidy-subsidyBefore15'),4000);assert.equal(run('S.periods'),2);
  run('save();load();stepMoney15();');assert.equal(run('S.points'),6321);
- assert.equal(run('S.release'),'1.6.15');assert.equal(run('runtimeFault13'),null);assert.deepEqual(g.errors,[]);console.log('PASS '+map+' start '+start+', day10/day20 +2000 once, correct toast/ledger, old cash/positions/period preserved');g.dom.window.close();
+ assert.equal(run('S.release'),'1.6.17');assert.equal(run('runtimeFault13'),null);assert.deepEqual(g.errors,[]);console.log('PASS '+map+' start '+start+', day10/day20 +2000 once, correct toast/ledger, old cash/positions/period preserved');g.dom.window.close();
 }

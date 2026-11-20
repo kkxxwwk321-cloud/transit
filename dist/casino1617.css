@@ -1,0 +1,27 @@
+/* Original symbols, presented inside a machined cabinet. */
+.slot-machine16{--slot-cell:76px;isolation:isolate;background:radial-gradient(ellipse at 30% 0,#88464a,transparent 65%),linear-gradient(145deg,#582d38,#241f2b 65%,#39212e);border:3px solid #d6b87c;border-radius:24px;padding:23px 51px 19px 13px;box-shadow:inset 0 0 0 3px #513824,inset 0 0 0 5px #ecd6a055,0 14px 24px #15293235;overflow:hidden}
+.slot-machine16::before{content:"";position:absolute;inset:8px;border:1px solid #e1be7255;border-radius:16px;pointer-events:none;z-index:-1}
+.slot-lights16{position:relative;margin:0 0 14px;padding:10px 4px 12px;border:1px solid #d4b57588;border-radius:12px;background:linear-gradient(#171d26,#30252c);font:bold clamp(16px,4.8vw,23px) Georgia,serif;letter-spacing:2px;color:#ffe8ac;text-shadow:0 1px 0 #000,0 0 13px #e3b65b55;box-shadow:inset 0 2px 5px #0008,0 1px #f4deb04d}
+.slot-lights16 small{display:block;font:600 10px system-ui;letter-spacing:5px;color:#bda884;margin:0 0 5px}
+.slot-reels16{position:relative;gap:5px;padding:6px;background:linear-gradient(#070e15,#19202b);border:2px solid #b09059;border-radius:12px;box-shadow:inset 0 4px 8px #000b,0 2px #e8d4a566}
+.slot-reels16::after{content:"";position:absolute;left:5px;right:5px;top:50%;height:var(--slot-cell);transform:translateY(-50%);border-top:1px solid #d89c5266;border-bottom:1px solid #d89c5266;box-shadow:0 0 8px #edc96e1a;pointer-events:none;z-index:3}
+.slot-reels16 .slot-reel1617{position:relative;display:block;flex:1;min-width:0;height:132px;width:auto;overflow:hidden;border-radius:6px;background:#fff9e9;box-shadow:inset 1px 0 3px #0008}
+.slot-reel1617::after{content:"";position:absolute;inset:0;z-index:2;border-radius:inherit;background:linear-gradient(#17212bb8,#17212b00 32%,#fff8 46%,#fff0 58%,#17212b00 72%,#17212ba8);box-shadow:inset 0 6px 10px #0004;pointer-events:none}
+.slot-strip1617{position:absolute;left:0;right:0;top:-48px;display:flex;flex-direction:column;font-style:normal;will-change:transform}
+.slot-strip1617 b{display:grid;place-items:center;flex:0 0 var(--slot-cell);height:var(--slot-cell);font-size:clamp(28px,8vw,43px);font-weight:800;line-height:1;color:#a62c37;text-shadow:0 2px 1px #0002}
+.slot-lever-track16{right:17px;top:93px;height:150px;width:13px;background:linear-gradient(90deg,#05090e,#55515a,#080d14);border:2px solid #bfaa7f;box-shadow:0 0 0 3px #191521,inset 0 3px 7px #000b}
+#slot-lever16{background:radial-gradient(circle at 30% 24%,#fff0d4,#ff9790 13%,#cd343c 48%,#70192c 80%);border:2px solid #f3c295;box-shadow:0 4px 5px #0009,inset -3px -4px 5px #48102588}
+.slot-status16{min-height:42px;display:grid;place-items:center;font-size:14px;line-height:1.5;color:#f2dfb4;margin-top:14px;padding:8px;border-radius:8px;background:#140f1b70;border:1px solid #c69f5844}
+.is-running1617 .slot-lights16{animation:slot-lamps1617 1.2s ease-in-out infinite alternate}
+.is-running1617 .slot-reel1617:not(.is-stopped1617){box-shadow:inset 0 0 12px #0005}
+.slot-reel1617.is-stopped1617{outline:1px solid #e3c779;outline-offset:-1px}
+.is-jackpot1617,.is-major1617{animation:slot-award1617 .65s ease-out 3}
+.slot-celebration1617{position:absolute;inset:0;z-index:5;overflow:hidden;pointer-events:none;background:radial-gradient(ellipse,#fff2ae33,transparent 70%)}
+.slot-celebration1617>i{position:absolute;left:var(--x);top:48%;font-style:normal;font-size:23px;opacity:0;animation:slot-coins1617 2s var(--delay) ease-out both}
+.slot-celebration1617 strong{position:absolute;left:12px;right:12px;top:38%;padding:14px 6px;text-align:center;background:linear-gradient(110deg,#4b2015f2,#332015f5);border:2px solid #f5d480;border-radius:12px;color:#ffe6a0;font-size:25px;letter-spacing:3px;box-shadow:0 4px 24px #0006;animation:slot-banner1617 3.5s both}
+.slot-celebration1617 em{display:block;font-style:normal;font-size:30px;letter-spacing:0;font-variant-numeric:tabular-nums;margin-top:5px}
+@keyframes slot-lamps1617{to{box-shadow:inset 0 2px 5px #0008,0 0 15px #e5b85977;color:#fff5cf}}
+@keyframes slot-award1617{50%{box-shadow:inset 0 0 0 3px #513824,0 0 25px #f6c758aa}}
+@keyframes slot-coins1617{0%{opacity:0;transform:translate(0,0) scale(.5)}12%{opacity:1}45%{transform:translate(calc(var(--drift) * .6),-100px) rotate(100deg)}100%{opacity:0;transform:translate(var(--drift),220px) rotate(320deg)}}
+@keyframes slot-banner1617{0%{opacity:0;transform:scale(.8)}10%,80%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.slot-machine16,.slot-lights16,.slot-celebration1617 *{animation:none!important}.slot-celebration1617 strong{opacity:1}}

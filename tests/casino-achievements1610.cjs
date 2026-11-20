@@ -1,7 +1,7 @@
-const assert=require('node:assert/strict'),create=require('./harness156.cjs'),g=create(),{run,w,timers}=g;
+const assert=require('node:assert/strict'),create=require('./harness156.cjs'),g=create({legacyTerrain166:true}),{run,w,timers}=g;
 function setup(){run(`slotSpinning16=false;casinoState16().session=null;activateAtlasGeometry('ocean');reset();atlasMenuOpen=false;closeModal();S.tutorial123=null;S.points=10000;var vegas1610=realCities()[0];vegas1610.isVegas=true;vegas1610.casino=true;S.casino16={built:S.day-10,nextOpen:S.day,session:null,last:null};achievements14.unlocked={};achievements14.best={};achievements14.seen={};achPending14=[];showCasino16();`);w.document.getElementById('casino-entry16').value='100';run('enterCasino16()');}
-function spin(symbols,stake='10'){w.document.getElementById('slot-stake16').value=stake;run(`var originalRandom1610=Math.random,rolls1610=${JSON.stringify(symbols)};Math.random=()=>rolls1610.length?(rolls1610.shift()+.2)/7:.5;spinCasino16();Math.random=originalRandom1610;`);}
-function finish(){const t=timers.filter(t=>t.ms===2050).at(-1);assert(t);t.f();}
+function spin(symbols,stake='10'){w.document.getElementById('slot-stake16').value=stake;run(`var originalResult1610=slotResult1617;slotResult1617=()=>${JSON.stringify(symbols)};spinCasino16();slotResult1617=originalResult1610;`);}
+function finish(){const id=run('slotFrame1617'),fn=g.raf13.get(id);assert(fn);fn(run('performance.now()+10000'));}
 function has(id){return run(`!!achievements14.unlocked['${id}']`)}
 setup();assert.equal(run('ACHIEVEMENTS14.length'),38);assert.equal(run('new Set(ACHIEVEMENTS14.map(a=>a.id)).size'),38);
 // A displayed/default triple, invalid input or an unplayed exit never counts.

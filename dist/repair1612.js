@@ -1,17 +1,27 @@
 'use strict';
 // Only the camera/scenic apron changes. Physical bounds, spawn geometry and saved coordinates do not.
-function cameraBounds1612(){return typeof terrainRevision168==='function'&&terrainRevision168()&&S.mapId==='ocean'?marineBounds168():mapSpec.bounds;}
+function cameraBounds1612(){return mapSpec.bounds;}
 function cameraBand1612(){const band=fitBand();return {top:Math.max(0,Math.min(H-120,band.top)),bottom:Math.max(band.top+100,Math.min(H,band.bottom))};}
 const minBefore1612=portraitMinScale,maxBefore1612=portraitMaxScale,clampBefore1612=clampPortraitCamera;
-portraitMinScale=function(width=W,height=H){if(!activeAtlasMap)return minBefore1612(width,height);const b=cameraBounds1612(),top=portraitRect('header')?.bottom??60,bottom=portraitRect('footer')?.top??height-65;return Math.min(Math.max(1,width-24)/(b.xmax-b.xmin),Math.max(100,Math.min(height,bottom)-top-16)/(b.ymax-b.ymin));};
+// Use a stable HUD-to-dock viewport, independent of temporary sheets/tutorials.
+function cameraPlayBand1616(height=H){
+ const top=Math.max(0,Math.min(height-1,portraitRect('header')?.bottom??60));
+ const bottom=Math.max(top+1,Math.min(height,portraitRect('footer')?.top??height-65));
+ return {top,bottom};
+}
+portraitMinScale=function(width=W,height=H){
+ if(!activeAtlasMap)return minBefore1612(width,height);
+ const b=cameraBounds1612(),band=cameraPlayBand1616(height);
+ return Math.max(width/(b.xmax-b.xmin),(band.bottom-band.top)/(b.ymax-b.ymin));
+};
 portraitMaxScale=function(){return activeAtlasMap?Math.max(portraitMinScale(),1.8):maxBefore1612();};
 clampPortraitCamera=function(target=view){
  if(!activeAtlasMap||!W||!H)return clampBefore1612(target);
- const b=cameraBounds1612(),band=cameraBand1612();target.scale=Math.max(portraitMinScale(),Math.min(portraitMaxScale(),Number.isFinite(target.scale)?target.scale:1));const s=target.scale;
+ const b=cameraBounds1612(),band=cameraPlayBand1616();target.scale=Math.max(portraitMinScale(),Math.min(portraitMaxScale(),Number.isFinite(target.scale)?target.scale:1));const s=target.scale;
  for(const [axis,lo,hi,start,end]of [['x','xmin','xmax',0,W],['y','ymin','ymax',band.top,band.bottom]]){
   const extent=(b[hi]-b[lo])*s,mid=(start+end)/2-(b[lo]+b[hi])/2*s;
-  // At overview, center the short axis. At close range, leave a small scenic buffer at the edge.
-  const pad=Math.min(90,120*s);
+  // Keep the detailed painting covering the play viewport at every zoom.
+  const pad=0;
   target[axis]=extent<=end-start?mid:Math.max(end-b[hi]*s-pad,Math.min(start-b[lo]*s+pad,Number.isFinite(target[axis])?target[axis]:mid));
  }
  return target;

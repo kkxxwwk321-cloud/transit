@@ -7,7 +7,7 @@ function mapImage168(id,revision=2){return revision===1?terrainImages167[id]:ter
 const resetBefore168=reset;
 reset=function(...args){
  const r=resetBefore168(...args);const oceanSeeds=S.mapId==='ocean'?realCities().slice(0,3).map(c=>({x:c.x,y:c.y})):null;
- S.terrainRevision167=2;S.release='1.6.15';activateAtlasGeometry(S.mapId);
+ S.terrainRevision167=2;S.release='1.6.17';activateAtlasGeometry(S.mapId);
  const desired={east:[[.66,.45],[.79,.42],[.73,.52]],west:[[.3572,.4524],[.4456,.5204],[.4864,.602]]},placed=[];
  for(let i=0;i<3;i++){const p=oceanSeeds?oceanSeeds[i]:safeSeed167(...desired[S.mapId][i],placed);Object.assign(S.cities[i],p);placed.push(p);}
  if(S.mapId==='east'){

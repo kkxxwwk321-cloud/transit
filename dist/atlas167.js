@@ -74,7 +74,7 @@ const seedOffsets167=[];for(let y=-420;y<=420;y+=24)for(let x=-420;x<=420;x+=24)
 function safeSeed167(u,v,previous,coastal=false){const b=mapSpec.bounds,desired={x:b.xmin+u*(b.xmax-b.xmin),y:b.ymin+v*(b.ymax-b.ymin)};for(const [dx,dy]of seedOffsets167){const p={x:desired.x+dx,y:desired.y+dy};if(previous.some(q=>Math.hypot(q.x-p.x,q.y-p.y)<200))continue;if(coastal&&nearestShore161(p,terrain167().coast,false).d>155)continue;if(cityBuildable(p.x,p.y,2))return p;}throw Error('没有安全的开局城市位置');}
 const resetBefore167=reset;
 reset=function(...args){
- const r=resetBefore167(...args);S.terrainRevision167=1;S.release='1.6.15';activateAtlasGeometry(S.mapId);
+ const r=resetBefore167(...args);S.terrainRevision167=1;S.release='1.6.17';activateAtlasGeometry(S.mapId);
  const seeds={east:[[.66,.45],[.79,.42],[.79,.60]],west:[[.40,.43],[.55,.43],[.66,.56]],ocean:[[.93,.67],[.85,.62],[.89,.76]]}[S.mapId],placed=[];
  for(let i=0;i<3;i++){let p=safeSeed167(...seeds[i],placed,S.mapId==='ocean'&&i===0);placed.push(p);Object.assign(S.cities[i],p,{regionId:0});}
  const center={x:placed.reduce((n,p)=>n+p.x,0)/3,y:placed.reduce((n,p)=>n+p.y,0)/3};S.cityRegions=[{id:0,...center,name:mapSpec.name,discoveredAt:0,nextLocalAt:Infinity}];S.atlasGrowth=null;configureGrowth();if(isOcean16())growthState().next=10;flushAtlas167();fit();save();return r;
