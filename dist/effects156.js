@@ -113,3 +113,4 @@ window.addEventListener('pageshow', () => { effectsAway156 = false; });
 // The native bridge uses interruptGame even when WebView visibility does not change.
 const interruptBeforeEffects156 = interruptGame;
 interruptGame = function (...args) { stopEffect156(); return interruptBeforeEffects156(...args); };
+

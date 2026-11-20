@@ -31,7 +31,7 @@ frame=function(...a){frameRunning161=true;framePaused161=S.paused;try{return fra
 const uiBefore161=updateUI;
 updateUI=function(...a){let r=uiBefore161(...a),d=formatDate(),date=$('date'),tag=$('calendar-tag');date.textContent=d.month+'月'+d.day+'日';let detail=tag.textContent.replace(/^第\d+年\s*·?\s*/,'');tag.textContent='第'+d.year+'年 · '+detail;return r;};
 const resetBefore161=reset;
-reset=function(...a){modalLease161=null;modalIntent161=null;let r=resetBefore161(...a);invalidateRouteDrawing161();S.release='1.6.11';return r;};
+reset=function(...a){modalLease161=null;modalIntent161=null;let r=resetBefore161(...a);invalidateRouteDrawing161();S.release='1.6.15';return r;};
 const loadBefore161=load;
 load=function(...a){modalLease161=null;modalIntent161=null;let r=loadBefore161(...a);invalidateRouteDrawing161();return r;};
 updateUI();

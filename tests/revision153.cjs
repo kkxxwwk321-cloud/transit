@@ -10,7 +10,7 @@ for(const m of html.matchAll(/<link[^>]*href="([^"?]+)[^"]*"/g)){let p=root+'/'+
 
 
 run("activateAtlasGeometry('west');reset();atlasMenuOpen=false;closeModal();S.tutorial123=null;");
-assert.equal(run('mapSpec.bounds.ymax'),1650);assert.equal(run('mapSpec.bounds.xmax'),1500);assert.equal(run('S.points'),7000);assert.equal(run('S.cities[0].x'),-320);
+assert.equal(run('mapSpec.bounds.ymax'),1650);assert.equal(run('mapSpec.bounds.xmax'),1500);assert.equal(run('S.points'),8000);assert.equal(run('S.cities[0].x'),-320);
 run("beginDraft('bus');draft.stops=[0,1,2];");assert.equal(run('draftCost().cash'),5670);run('cancelDraft(false);');
 run('view.scale=portraitMinScale();var low153=clampPortraitCamera({scale:view.scale,x:0,y:-1e6}).y,high153=clampPortraitCamera({scale:view.scale,x:0,y:1e6}).y;');assert(run('high153-low153>=239'));
 // Every open river end lies outside the complete movable scenic bounds, on both maps.

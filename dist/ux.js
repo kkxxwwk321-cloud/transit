@@ -1659,11 +1659,11 @@ function uxBatchOffers() {
   generateActivityOffers.uxBatch = true;
 }
 // Late networks: touches land on lines and stations almost everywhere, so a drag used to grab whatever was under the
-// finger (user 2026-11-15, 拉线打架). Now a drag edits a line only when that line is the one selected:
+// finger. Keep the initial city/line target stable, so direct segment editing remains available:
 // - from a station shared by several lines: a new line starts there (it used to pop the line picker, so no new line
 //   could be drawn from a busy station; a tap still opens the picker). A station on one line keeps upstream's drag —
 //   extend from an end, pull a stop off — which the v1.5.9 tutorial teaches;
-// - from a stretch of line: the selected line is pulled (elastic); any other line under the finger is just map → pan.
+// - from a stretch of line: directly pull the actual visible segment to insert/remove a stop.
 // Upstream's edit mode (a line chosen in the picker: draft.tapEdit132) and pinch are untouched.
 function uxGestureRules() {
   if (typeof movePointer !== 'function' || movePointer.uxRules) return;
@@ -1674,9 +1674,8 @@ function uxGestureRules() {
     const tutorial = S?.tutorial123?.stage && S.tutorial123.stage !== 'done';
     if (g && g.kind === 'tap' && !g.uxRuled && !tutorial && !draft && pointers.size === 1 && Math.hypot(e.clientX - g.start.x, e.clientY - g.start.y) > 14) {
       g.uxRuled = true;
-      const sel = selected?.type === 'line' ? selected.id : selected?.type === 'stop' ? selected.line : selected?.type === 'junction' ? selected.preferred : null;
       if (g.c) { if (g.ambiguousLines && !g.cityLine) g.ambiguousLines = null; }   // shared station: a new line (single-line stations keep upstream's extend / remove-stop drag, taught by tutorial159)
-      else if (g.rh && g.rh.l?.id !== sel) g.rh = null;
+      // A visible line owns the drag from the first press; empty space alone pans the map.
     }
     return mv.call(this, e);
   };

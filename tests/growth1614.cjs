@@ -1,0 +1,9 @@
+const assert=require('node:assert/strict'),g=require('./harness156.cjs')(),{run}=g;
+// Exact geography of the day-200, six-city stalled run, including its real bridgeheads.
+run(`activateAtlasGeometry('east');reset();atlasMenuOpen=false;closeModal();S.tutorial123=null;S.day=200;S.unlocked=['bus','emu','rail'];S.cities=[];for(const [x,y,kind]of [[404,327],[659,282],[549,482],[600,780],[557.460997364163,532.4837586555512,'bridgehead'],[562.8755641165128,567.5041322358796,'bridgehead'],[800,700],[280,700]]){const c=makeCity(x,y);Object.assign(c,{regionId:0,dormant:false,size:2,maxSize:2,kind});S.cities.push(c);}S.cityRegions=[{id:0,x:537.3333333333334,y:363.6666666666667,name:'东部平原河网',discoveredAt:0}];S.atlasGrowth=null;configureGrowth();growthState().next=70;growthState().firstSeedRetryAt=200;growthAvailable=freePoints();var oldSeed14=seedBefore1614(true),cash14=S.points,oldPositions14=JSON.stringify(S.cities.map(c=>[c.x,c.y]));`);
+assert.equal(run('oldSeed14'),null,'fixture must reproduce original strict-ring failure');
+run('spawnCity();');assert.equal(run('cityRegions().length'),2);assert.equal(run('realCities().length'),7);assert.equal(run('cityRegions()[1].reservedPoints.length'),8);assert.equal(run('S.points'),run('cash14'));
+assert.equal(run('JSON.stringify(S.cities.slice(0,8).map(c=>[c.x,c.y]))'),run('oldPositions14'));
+run('for(let day=201;day<=300;day++){S.day=day;realCities().forEach(c=>c.dormant=false);spawnCity();}');
+assert(run('realCities().length>=14'),'new circle did not continue filling');assert(run('realCities().every(c=>cityBuildable(c.x,c.y,2))'));
+run('var count14=realCities().length;save();load();');assert.equal(run('realCities().length'),run('count14'));assert.deepEqual(g.errors,[]);console.log('PASS exact stalled save: strict search fails, bounded fallback reserves eight safe cities, no money/coordinate changes, growth and reload continue');g.dom.window.close();

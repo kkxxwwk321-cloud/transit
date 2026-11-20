@@ -3,7 +3,7 @@ let rng=1;g.w.Math.random=()=>((rng=(1664525*rng+1013904223)>>>0)/4294967296);
 run(`var oldMains167=JSON.stringify(Object.fromEntries(Object.entries(ATLAS_MAPS).map(([id,d])=>[id,d.main])));`);
 for(const id of ['east','west','ocean']){
  run(`activateAtlasGeometry('${id}');reset();atlasMenuOpen=false;closeModal();S.tutorial123=null;S.paused=true;`);
- assert(run('newAtlas167()'));assert.equal(run('S.points'),{east:5000,west:7000,ocean:9000}[id]);
+ assert(run('newAtlas167()'));assert.equal(run('S.points'),{east:7000,west:8000,ocean:12000}[id]);
  assert(run('realCities().length===3&&realCities().every(c=>cityBuildable(c.x,c.y,2))'));
  run(`var terrainJSON167=JSON.stringify({mountainPolygons,water:terrain167().water,coast:mapSpec.coast,cities:S.cities.map(c=>({id:c.id,x:c.x,y:c.y,shape:c.shape,color:c.color}))});save();load();`);
  assert.equal(run('JSON.stringify({mountainPolygons,water:terrain167().water,coast:mapSpec.coast,cities:S.cities.map(c=>({id:c.id,x:c.x,y:c.y,shape:c.shape,color:c.color}))})'),run('terrainJSON167'));

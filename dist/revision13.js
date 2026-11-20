@@ -54,14 +54,19 @@ uxExtMove = function(e) {
   return extMoveBefore13(e);
 };
 const commitBefore13 = commitDraft;
+function routeRepeatIssue13(stops,type) {
+  const seen=new Set(),loop=isLoop130({type,stops});
+  for(let i=0;i<stops.length;i++){
+    const id=stops[i];
+    if(seen.has(id)&&!(i===stops.length-1&&id===stops[0]&&loop))return S.cities[id]?.kind==='bridgehead'?'线路重复经过同一桥头，请调整走向或拆分线路':'只能连接公交线路首尾，不能在中途形成闭环';
+    seen.add(id);
+  }
+  return null;
+}
 commitDraft = function(...a) {
   if (draft) {
-    let ids = draft.stops, seen = /* @__PURE__ */ new Set();
-    for (let i = 0; i < ids.length; i++) {
-      let id = ids[i];
-      if (seen.has(id) && !(i === ids.length - 1 && id === ids[0] && isLoop130(draft))) return toast("只能连接公交线路首尾，不能在中途形成闭环");
-      seen.add(id);
-    }
+    const issue=draftCost().invalid;
+    if(issue)return toast(issue);
   }
   return commitBefore13(...a);
 };

@@ -6,7 +6,7 @@ for(let id of ['east','west','ocean']){
  assert(run('$("modal-content").textContent.includes("确认重新开始")'));
  const confirm=[...w.document.querySelectorAll('#modal-content button')].find(b=>b.textContent==='确认重新开始');assert(confirm);g.raf13.clear();run(confirm.getAttribute('onclick'));for(let frame=0;frame<30;frame++){for(const [id,fn]of [...g.raf13]){g.raf13.delete(id);fn(0);}await Promise.resolve();await Promise.resolve();}assert(!run('mapLoading166'));
  assert.equal(run('S.mapId'),id);assert.equal(run('Math.floor(S.day)'),0);assert.equal(run('realCities().length'),3);assert.equal(run('atlasMenuOpen'),false);assert.equal(run('modalOpen'),false);assert.equal(run('atlasRestart'),false);assert.equal(run('JSON.stringify(atlasBest())'),run('beforeBest164'));
- if(id==='ocean')assert.equal(run('S.points'),9000);
+ if(id==='ocean')assert.equal(run('S.points'),12000);
 }
 run(`var eastSaved164=JSON.stringify(atlasSaved('east')),westSaved164=JSON.stringify(atlasSaved('west'));S.day=5;save();showAtlasMaps(false);atlasSelected='ocean';portraitAskRestart();portraitCancelRestart();`);assert.equal(run('Math.floor(S.day)'),5);assert.equal(run('JSON.stringify(atlasSaved("east"))'),run('eastSaved164'));assert.equal(run('JSON.stringify(atlasSaved("west"))'),run('westSaved164'));
 // A fast continuous drag through B must not lose it to the land-node debounce.

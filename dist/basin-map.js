@@ -86,10 +86,10 @@ paintTerrain=function(){if(mapSpec.id!=='west')return terrainBefore14();ctx.save
 
 // Actual playtest reset: preserve all standard gameplay and per-map save flows.
 const resetBeforeBasinWeb=reset;
-reset=function(...args){creatingBasin158=true;try{let result=resetBeforeBasinWeb(...args);if(S.mapId==='west'){S.points=7000;S.basinTerrain158=3;S.basinPlaytest={version:4};S.cities.forEach((c,i)=>{let p=basinWest14.start[i];if(p)Object.assign(c,{x:p[0],y:p[1]});});activateAtlasGeometry('west');save();updateUI();}return result;}finally{creatingBasin158=false;}};
+reset=function(...args){creatingBasin158=true;try{let result=resetBeforeBasinWeb(...args);if(S.mapId==='west'){S.points=STARTING_FUNDS.west;S.basinTerrain158=3;S.basinPlaytest={version:4};S.cities.forEach((c,i)=>{let p=basinWest14.start[i];if(p)Object.assign(c,{x:p[0],y:p[1]});});activateAtlasGeometry('west');save();updateUI();}return result;}finally{creatingBasin158=false;}};
 const thumbBeforeBasinWeb=atlasThumbnail;
 atlasThumbnail=function(id){if(id!=='west')return thumbBeforeBasinWeb(id);let s='<svg viewBox="-1000 -300 2200 1500" role="img" aria-label="中央盆地与外围平原"><rect x="-1000" y="-300" width="2200" height="1500" fill="#e6edda"/>';for(let r of westRangesJoined1512)s+='<polygon points="'+r.poly.map(p=>p.x+','+p.y).join(' ')+'" fill="#9fb297"/>';for(let pts of [basinWest14.main,...basinWest14.branches])s+='<polyline points="'+smoothRiver128(pts).map(p=>p.join(',')).join(' ')+'" fill="none" stroke="#80b8b7" stroke-width="22" stroke-linejoin="round"/>';return s+'</svg>';};
-let westCardBasin=$('atlas-card-west');if(westCardBasin){westCardBasin.querySelector('.atlas-terrain').innerHTML=atlasThumbnail('west');westCardBasin.querySelector('p').innerHTML='中央盆地 · 东南山口 · 外围平原<br>开局 ¥7000，跨山连接第三座城市。';}
+let westCardBasin=$('atlas-card-west');if(westCardBasin){westCardBasin.querySelector('.atlas-terrain').innerHTML=atlasThumbnail('west');westCardBasin.querySelector('p').innerHTML='中央盆地 · 东南山口 · 外围平原<br>开局 ¥8000，跨山连接第三座城市。';}
 let titleBasin=document.querySelector('.atlas-heading h1');if(titleBasin)titleBasin.textContent='让城市，彼此相连。';
 let introBasin=document.querySelector('.atlas-heading p');if(introBasin)introBasin.textContent='西部新地图已就绪，开始你的旅程。';
 if(S?.mapId==='west')activateAtlasGeometry('west');

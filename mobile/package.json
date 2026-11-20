@@ -1,6 +1,6 @@
 {
   "name": "transit-android-validation",
-  "version": "1.6.5",
+  "version": "1.6.15",
   "private": true,
   "scripts": {
     "prepare:web": "node scripts/prepare-web.mjs",
@@ -18,3 +18,4 @@
     "jsdom": "^26.1.0"
   }
 }
+

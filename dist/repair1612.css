@@ -1,0 +1,10 @@
+/* Every card in one row stretches equally; long copy pushes the entire row. */
+html body #modal-content .research-grid{align-items:stretch!important;grid-auto-rows:auto!important}
+html body #modal-content .research-card{height:100%!important;box-sizing:border-box;display:flex!important;flex-direction:column!important}
+html body #modal-content .research-card p{flex:1 0 auto!important}
+html body #modal-content .research-card .research-cost{margin-top:auto!important}
+html body #modal-content .research-card button{min-height:36px!important;flex-shrink:0}
+html body #details .ux-fac-strip:has(.farm-chip1612){display:flex!important}
+html body #details.is-full .ux-fac-strip:has(.ux-harbor)>button:not(.ux-harbor){display:inline-flex!important}
+html body #details .farm-chip1612{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+html body #details .farm-chip1612 em{font-style:normal;font-size:11px;color:#738367}

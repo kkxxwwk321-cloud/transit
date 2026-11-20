@@ -12,4 +12,5 @@ for(const entry of await readdir(source,{withFileTypes:true})) {
   await cp(path.join(source,entry.name),path.join(out,entry.name),{recursive:true});
 }
 await build({entryPoints:[path.join(root,'native-bridge.mjs')],outfile:path.join(out,'native-bridge.js'),bundle:true,format:'iife',target:'chrome108',legalComments:'none'});
-console.log('v1.6.5 current web frontend and local sound effects staged for Android.');
+console.log('v1.6.15 current web frontend and local sound effects staged for Android.');
+

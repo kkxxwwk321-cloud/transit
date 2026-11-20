@@ -7,7 +7,7 @@ function mapImage168(id,revision=2){return revision===1?terrainImages167[id]:ter
 const resetBefore168=reset;
 reset=function(...args){
  const r=resetBefore168(...args);const oceanSeeds=S.mapId==='ocean'?realCities().slice(0,3).map(c=>({x:c.x,y:c.y})):null;
- S.terrainRevision167=2;S.release='1.6.11';activateAtlasGeometry(S.mapId);
+ S.terrainRevision167=2;S.release='1.6.15';activateAtlasGeometry(S.mapId);
  const desired={east:[[.66,.45],[.79,.42],[.73,.52]],west:[[.3572,.4524],[.4456,.5204],[.4864,.602]]},placed=[];
  for(let i=0;i<3;i++){const p=oceanSeeds?oceanSeeds[i]:safeSeed167(...desired[S.mapId][i],placed);Object.assign(S.cities[i],p);placed.push(p);}
  if(S.mapId==='east'){
@@ -96,17 +96,28 @@ if(!existingSave167){activateAtlasGeometry('east');reset();S.paused=true;}
 // New geography uses the full mainland, including the western plain and southwestern projection.
 const chooseBefore168=chooseCity16;let oceanCandidatesOwner168=null,oceanCandidates168=[];
 function oceanZone168(p){const b=mapSpec.bounds,x=(p.x-b.xmin)/(b.xmax-b.xmin),y=(p.y-b.ymin)/(b.ymax-b.ymin);return x<.40&&y>.70?'southwest':x<.29?'west':y<.34?'north':x>.72?'east':'center';}
+// Measured in world coordinates; each phase gradually permits a longer connection.
+function oceanSpacing1613(n){
+ if(n<=8)return {min:260,max:480,preferred:340};
+ if(n<=12)return {min:280,max:560,preferred:380};
+ if(n<=24)return {min:300,max:680,preferred:440};
+ return {min:320,max:820,preferred:520};
+}
 chooseCity16=function(){
  if(!terrainRevision168())return chooseBefore168();const b=mapSpec.bounds,w=b.xmax-b.xmin,h=b.ymax-b.ymin;
  if(oceanCandidatesOwner168!==S){oceanCandidatesOwner168=S;oceanCandidates168=[];for(let y=b.ymin+140;y<b.ymax-100;y+=60)for(let x=b.xmin+120;x<b.xmax-100;x+=60)if(cityBuildable(x,y,2)){const p={x,y};oceanCandidates168.push({...p,coast:shore16(p).d,zone:oceanZone168(p)});}}
- const cs=realCities().filter(c=>!c.removed),n=cs.length+1,phase=n<=12?0:n<=24?1:2,counts={};for(const c of cs){const z=oceanZone168(c);counts[z]=(counts[z]||0)+1;}
- let target=null;if(phase===0&&!counts.southwest)target={x:b.xmin+w*.23,y:b.ymin+h*.79};else if(phase===0&&!counts.west)target={x:b.xmin+w*.13,y:b.ymin+h*.54};else if(phase===1&&(counts.center||0)<5)target={x:b.xmin+w*.52,y:b.ymin+h*.47};else if(phase===2)target={x:b.xmin+w*.51,y:b.ymin+h*.20};
- const candidates=oceanCandidates168.map(p=>({...p,near:Math.min(...cs.map(c=>Math.hypot(c.x-p.x,c.y-p.y)))})).filter(p=>p.near>=260&&p.near<=820&&(phase!==0||p.y>b.ymin+h*.45));
- function score(p){const coastal=p.coast<210;let weight=phase===0?(coastal?0:430):phase===1?(p.zone==='center'?0:coastal?100:80):(p.zone==='north'?0:180);return Math.random()*170+Math.abs(p.near-430)*.3+weight+(target?Math.hypot(p.x-target.x,p.y-target.y)*.42:0)+(counts[p.zone]||0)*24;}
+ const cs=realCities().filter(c=>!c.removed),n=cs.length+1,phase=n<=12?0:n<=24?1:2,spacing=oceanSpacing1613(n),counts={};for(const c of cs){const z=oceanZone168(c);counts[z]=(counts[z]||0)+1;}
+ // Expand locally first. Westward targets start only after a small southern network exists.
+ let target=null;if(phase===0&&n>8&&!counts.southwest)target={x:b.xmin+w*.23,y:b.ymin+h*.79};else if(phase===0&&n>8&&!counts.west)target={x:b.xmin+w*.13,y:b.ymin+h*.54};else if(phase>=1&&(counts.west||0)<2)target={x:b.xmin+w*.13,y:b.ymin+h*.54};else if(phase===1&&(counts.center||0)<5)target={x:b.xmin+w*.52,y:b.ymin+h*.47};else if(phase===2)target={x:b.xmin+w*.51,y:b.ymin+h*.20};
+ const candidates=oceanCandidates168.map(p=>({...p,near:Math.min(...cs.map(c=>Math.hypot(c.x-p.x,c.y-p.y)))})).filter(p=>p.near>=spacing.min&&p.near<=spacing.max&&(phase!==0||p.y>b.ymin+h*.45));
+ function score(p){const coastal=p.coast<210,nearby=cs.filter(c=>Math.hypot(c.x-p.x,c.y-p.y)<=spacing.max*1.3).length;let weight=phase===0?(coastal?0:160):phase===1?(p.zone==='center'?0:coastal?100:80):(p.zone==='north'?0:180);return Math.random()*120+Math.abs(p.near-spacing.preferred)*.65+weight+(target?Math.hypot(p.x-target.x,p.y-target.y)*(phase===0?.16:.32):0)+Math.max(0,nearby-4)*65-(nearby>=2&&nearby<=4?45:0);}
  const ranked=candidates.map(p=>({...p,score:score(p)})).sort((a,b)=>a.score-b.score);
- for(const p of ranked){const neighbors=cs.filter(c=>Math.hypot(c.x-p.x,c.y-p.y)<=820).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y));for(const c of neighbors.slice(0,4)){let dry=true;for(let i=1;i<16;i++){const q={x:c.x+(p.x-c.x)*i/16,y:c.y+(p.y-c.y)*i/16};if(!polygon16(q,terrain167().coast)){dry=false;break;}}if(!dry)continue;const req=requirements(c,p,'bus');if(!req.invalid&&req.tunnel<=(phase===0?1:2)&&req.bridge<=1)return p;}}
+ let best=null,feasible=0;for(const p of ranked){const neighbors=cs.filter(c=>Math.hypot(c.x-p.x,c.y-p.y)<=spacing.max).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y));for(const c of neighbors.slice(0,4)){let dry=true;for(let i=1;i<16;i++){const q={x:c.x+(p.x-c.x)*i/16,y:c.y+(p.y-c.y)*i/16};if(!polygon16(q,terrain167().coast)){dry=false;break;}}if(!dry)continue;const req=requirements(c,p,'bus');if(!req.invalid&&req.tunnel<=(phase===0?1:2)&&req.bridge<=1){const costScore=p.score+req.tunnel*180+req.bridge*100;if(!best||costScore<best.costScore)best={p,costScore};feasible++;break;}}if(feasible>=10)break;}
+ if(best)return best.p;
+ // Retain the spacing cap when no legal point exists; retry later without spending money.
  return null;
 };
+
 const basinSpawnBefore168=basinSpawnAllowedWeb;
 basinSpawnAllowedWeb=function(p){if(!terrainRevision168()||S.mapId!=='west')return basinSpawnBefore168(p);if(!cityBuildable(p.x,p.y,2))return false;const cs=realCities().filter(c=>!c.removed).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y));const cap=S.day<65?3000:S.day<120?4800:7200;
  for(const c of cs.slice(0,4)){const eu=Math.hypot(c.x-p.x,c.y-p.y),req=requirements(c,p,'bus'),cost=Math.ceil(eu*.38)*10+req.bridge*1500+req.tunnel*2200;if(cost<=cap&&req.tunnel<=1&&req.bridge<=1)return true;if(eu>950)continue;const g=basinPathGridWeb(),x=Math.round((p.x-g.b.xmin)/g.step),y=Math.round((p.y-g.b.ymin)/g.step),distance=basinRouteDistancesWeb(c)[y*g.nx+x];if(distance/eu<2.8&&distance*3.8+req.bridge*1500<=cap)return true;}
